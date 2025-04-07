@@ -11,7 +11,13 @@ const Navbar = () => {
       <div className="w-full flex justify-between items-center px-4 sm:px-6">
         {/* Logo */}
         <div className="text-lg font-serif font-semibold tracking-wide">
-          <Link to="/">Auctora</Link>
+          <Link to="/">
+            <img
+              src="/images/logo.png"
+              alt = "Logo"
+              className = "w-12 h-auto object-contain"
+              />
+          </Link>
         </div>
 
         {/* Desktop Menu */}
