@@ -9,18 +9,18 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve image uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// API routes
 app.use('/api/artworks', artworkRoutes);
 app.use('/api/bids', bidRoutes);
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')));
-
-  // ✅ Final safe catch-all route
-  app.get(/^\/(?!api).*/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build/index.html'));
-  });
-}
+// Optional: Fallback route for unknown API calls
+app.use((req, res) => {
+  res.status(404).json({ message: 'API route not found' });
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
