@@ -23,7 +23,8 @@ const HeroSection = () => {
         const formatted = data.artworks.map((art) => ({
           ...art,
           images: [`http://localhost:5000${art.image_url}`], // combine backend host + path
-          price: `$${parseFloat(art.price).toFixed(2)}`
+          price: `$${parseFloat(art.price).toFixed(2)}`,
+          end_time: art.end_time ? new Date(art.end_time) : null
         }));
   
         setCards(formatted);
