@@ -14,7 +14,7 @@ const Footer = () => {
 
         <div className="space-y-2 px-6">
           <p>123-456-7890</p>
-          <p>poudelutsav65@gmail.com</p>
+          <p>info.auctora@gmail.com</p>
           <div className="pt-2">
             <p>1700 SW College Avenue</p>
             <p>Topeka, Kansas, 66604</p>

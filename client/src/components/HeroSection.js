@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import ArtModal from './ArtModal';
+import { supabase } from '../supabaseClient';
 
 const HeroSection = () => {
   const [selectedArt, setSelectedArt] = useState(null);
@@ -11,40 +12,106 @@ const HeroSection = () => {
 
   const CARD_WIDTH = 250; // Width of each card
   const GAP = 24;  // Gap between cards
-  const totalSlides = Math.max(1, cards.length - cardsPerView + 1); // Calculate total slides
-  const offsetX = -(currentIndex * (CARD_WIDTH + GAP)); // Calculate offset for the scroll
+  
+  // Calculate visible cards and maximum scroll position
+  const visibleCards = Math.min(cardsPerView, cards.length);
+  const maxScroll = cards.length - visibleCards;
+  const offsetX = -(currentIndex * (CARD_WIDTH + GAP));
 
   useEffect(() => {
-    const fetchCards = async () => {
+    console.log({
+      totalCards: cards.length,
+      visibleCards,
+      maxScroll,
+      currentIndex,
+      offsetX
+    });
+  }, [cards.length, visibleCards, maxScroll, currentIndex, offsetX]);
+
+  useEffect(() => {
+    // Test Supabase connection
+    const testConnection = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/artworks'); // full URL
-        const data = await res.json();
-  
-        const formatted = data.artworks.map((art) => ({
-          ...art,
-          images: [`http://localhost:5000${art.image_url}`], // combine backend host + path
-          price: `$${parseFloat(art.price).toFixed(2)}`,
-          end_time: art.end_time ? new Date(art.end_time) : null
-        }));
-  
-        setCards(formatted);
+        console.log('Testing Supabase connection...');
+        const { data, error } = await supabase
+          .from('artworks')
+          .select('count')
+          .single();
+        
+        console.log('Connection test result:', { data, error });
       } catch (err) {
-        console.error('Error fetching artworks:', err);
+        console.error('Connection test error:', err);
       }
     };
-  
-    fetchCards();
+
+    testConnection();
+    fetchArtworks();
   }, []);
-  
+
+  const fetchArtworks = async () => {
+    try {
+      console.log('Fetching artworks from Supabase...');
+      // Simplified query - just fetch artworks first
+      const { data: artworks, error } = await supabase
+        .from('artworks')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      console.log('Supabase response:', { artworks, error });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!artworks || artworks.length === 0) {
+        console.log('No artworks found in the database');
+        return;
+      }
+
+      // Format the data
+      const formatted = artworks.map((art) => ({
+        id: art.id,
+        title: art.title,
+        images: [art.image_url],
+        price: `$${parseFloat(art.starting_price).toFixed(2)}`,
+        end_time: art.end_time ? new Date(art.end_time) : null,
+        description: art.description,
+        starting_price: art.starting_price
+      }));
+
+      console.log('Formatted artworks:', formatted);
+      setCards(formatted);
+    } catch (err) {
+      console.error('Error details:', err);
+    }
+  };
 
   // Handle Next Button Click
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % totalSlides);
+    console.log('Next clicked:', { currentIndex, maxScroll });
+    
+    if (currentIndex >= maxScroll) {
+      console.log('Resetting to start');
+      setCurrentIndex(0);
+    } else {
+      const nextIndex = Math.min(currentIndex + 1, maxScroll);
+      console.log('Moving to index:', nextIndex);
+      setCurrentIndex(nextIndex);
+    }
   };
 
   // Handle Prev Button Click
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
+    console.log('Prev clicked:', { currentIndex, maxScroll });
+    
+    if (currentIndex <= 0) {
+      console.log('Moving to end');
+      setCurrentIndex(maxScroll);
+    } else {
+      const prevIndex = Math.max(currentIndex - 1, 0);
+      console.log('Moving to index:', prevIndex);
+      setCurrentIndex(prevIndex);
+    }
   };
 
   return (
@@ -90,68 +157,212 @@ const HeroSection = () => {
       </div>
 
       {/* Art Carousel Section */}
-      <div className="px-6 md:px-16 py-16 bg-[#D3CABE]">
-        <h2 className="text-3xl md:text-4xl font-serif text-black mb-10">Trending Now</h2>
+      <div className="py-16 bg-[#D3CABE]">
+        <h2 className="text-3xl md:text-4xl font-serif text-black mb-10 pl-6">Trending Now</h2>
 
-        <div className="relative overflow-hidden">
-  {/* Prev Button */}
-  <button
-    onClick={handlePrev}
-    className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-black text-white p-2 rounded-full shadow hover:bg-gray-800"
-  >
-    <FaChevronLeft />
-  </button>
+        <div className="relative mx-auto px-16 pb-12 pt-8 bg-[#C5BDB3] max-w-[1400px]">
+          {/* Prev Button */}
+          <button
+            onClick={handlePrev}
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black text-white p-2 rounded-full shadow hover:bg-gray-800"
+          >
+            <FaChevronLeft />
+          </button>
 
-  {/* Scrollable Card Track */}
-  <div
-    className="flex gap-6 transition-transform duration-500 ease-in-out"
-    style={{
-      transform: `translateX(${offsetX}px)`,
-      width: 'max-content',
-    }}
-  >
-    {cards.map((art, index) => (
-      <div
-        key={index}
-        className="w-[250px] shrink-0 bg-black text-white p-4 rounded shadow-lg flex flex-col h-[450px]"
-      >
-        {/* Image */}
-        <img
-          src={art.images[0]}
-          alt={art.title}
-          className="w-full h-[300px] object-cover mb-4 rounded"
-        />
-
-        {/* Title + Price + Button */}
-        <div className="flex flex-col justify-between flex-grow">
-          {/* Title + Price */}
-          <div>
-            <h3 className="text-base font-serif font-semibold mb-1 break-words">{art.title}</h3>
-            <p className="text-sm mb-3">{art.price}</p>
+          <div className="overflow-hidden mx-4">
+            <div
+              className="flex gap-6 transition-transform duration-500 ease-in-out"
+              style={{
+                transform: `translateX(${offsetX}px)`,
+                width: 'max-content',
+              }}
+            >
+              {cards.map((art, index) => (
+                <div
+                  key={index}
+                  className="w-[250px] shrink-0 bg-black text-white p-6 rounded shadow-lg flex flex-col h-[450px]"
+                >
+                  <img
+                    src={art.images[0]}
+                    alt={art.title}
+                    className="w-full h-[300px] object-cover mb-4 rounded"
+                  />
+                  <div className="flex flex-col justify-between flex-grow">
+                    <div>
+                      <h3 className="text-base font-serif font-semibold mb-1 break-words">{art.title}</h3>
+                      <p className="text-sm mb-3">{art.price}</p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedArt(art)}
+                      className="mt-auto border border-white px-3 py-1 text-xs font-light hover:bg-white hover:text-black transition duration-300 ease-in-out w-fit self-start"
+                    >
+                      Details
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Details Button */}
+          {/* Next Button */}
           <button
-            onClick={() => setSelectedArt(art)}
-            className="mt-auto border border-white px-3 py-1 text-xs font-light hover:bg-white hover:text-black transition duration-300 ease-in-out w-fit self-start"
+            onClick={handleNext}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black text-white p-2 rounded-full shadow hover:bg-gray-800"
           >
-            Details
+            <FaChevronRight />
           </button>
         </div>
       </div>
-    ))}
-  </div>
 
-  {/* Next Button */}
-  <button
-    onClick={handleNext}
-    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-black text-white p-2 rounded-full shadow hover:bg-gray-800"
-  >
-    <FaChevronRight />
-  </button>
-</div>
+      <section className="bg-[#D3CABE] text-black font-serif">
 
-      </div>
+        {/* Section 1: About Us (Text Left, Image Right) */}
+        <div className="flex flex-col lg:flex-row h-[90vh]">
+          <div className="lg:w-1/2 w-full flex flex-col justify-center items-center p-8 lg:p-20 bg-[#D3CABE]">
+            <div className="max-w-xl space-y-8">
+              <div className="space-y-2">
+                <span className="text-sm tracking-wider text-black/60 uppercase">Our Story</span>
+                <h2 className="text-6xl mb-4 font-serif leading-tight">About Us</h2>
+                <div className="w-20 h-1 bg-black/20"></div>
+              </div>
+              <h4 className="text-xl font-medium text-black/80 tracking-wide">Where Art Meets Innovation</h4>
+              <div className="space-y-6 text-base font-light leading-relaxed">
+                <p>
+                  Auctora isn't your average auction house — because average is boring and we don't do boring. We're a bold platform built for artists, collectors, and curious scrollers who think "maybe I do have an eye for this."
+                </p>
+                <p>
+                  Whether you're a first-time bidder or a seasoned connoisseur, you'll find a space here that's as inspiring as the art itself.
+                </p>
+                <p className="italic text-black/75">
+                  Real artists. Real collectors. Real drama (but the good kind — the bidding kind).
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="lg:w-1/2 w-full h-full">
+            <img
+              src="/images/AboutUs1.jpg"
+              alt="About Section Visual"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+
+        {/* Section 2: Mission Statement (Image Left, Text Right) */}
+        <div className="flex flex-col lg:flex-row h-[90vh]">
+          <div className="lg:w-1/2 w-full h-full">
+            <img
+              src="/images/AboutUs3.jpg"
+              alt="Mission Section Visual"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="lg:w-1/2 w-full flex flex-col justify-center items-center p-8 lg:p-20 bg-[#D3CABE]">
+            <div className="max-w-xl space-y-8">
+              <div className="space-y-2">
+                <span className="text-sm tracking-wider text-black/60 uppercase">Our Purpose</span>
+                <h2 className="text-6xl mb-4 font-serif leading-tight">Mission Statement</h2>
+                <div className="w-20 h-1 bg-black/20"></div>
+              </div>
+              <h4 className="text-xl font-medium text-black/80 tracking-wide">Redefining Art Access</h4>
+              <div className="space-y-6 text-base font-light leading-relaxed">
+                <p>
+                  Our mission is simple: shake up the art world without spilling the paint. We're here to connect creators and collectors through a fair, beautiful, and occasionally fierce auction experience.
+                </p>
+                <p>
+                  No elitist gatekeeping. No stuffy gallery silence. Just authentic art, honest bidding, and a whole lot of passion.
+                </p>
+                <p className="italic text-black/75">
+                  We're building a platform where art meets everyone — no velvet rope required.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Who We Are (Text Left, Custom Size Image Grid Right) */}
+        <div className="flex flex-col lg:flex-row h-[90vh]">
+          {/* Text Column */}
+          <div className="lg:w-1/2 w-full flex flex-col justify-center items-center p-8 lg:p-20 bg-[#D3CABE]">
+            <div className="max-w-xl space-y-8">
+              <div className="space-y-2">
+                <span className="text-sm tracking-wider text-black/60 uppercase">Our Team</span>
+                <h2 className="text-6xl mb-4 font-serif leading-tight">Who We Are</h2>
+                <div className="w-20 h-1 bg-black/20"></div>
+              </div>
+              <h4 className="text-xl font-medium text-black/80 tracking-wide">The Creative Force</h4>
+              <div className="space-y-6 text-base font-light leading-relaxed">
+                <p>
+                  We're students, creatives, caffeine-powered coders, and design nerds who believe the art world needs a little...redecoration.
+                </p>
+                <p>
+                  From the front-end to the frame, our team brings together bold ideas and an even bolder love for creativity.
+                </p>
+                <p className="italic text-black/75 mb-10">
+                  We don't just run an art platform — we breathe it, build it, and sometimes lose sleep over it (usually around 2:00 AM, when the last bug decides to throw a tantrum.
+                </p>
+              </div>
+              <Link
+                to="/about"
+                className="inline-block border border-black px-4 py-2 text-sm hover:bg-black hover:text-white transition"
+              >
+                Meet Our Team
+              </Link>
+            </div>
+          </div>
+
+          {/* Image Grid Column with dynamic layout */}
+          <div className="lg:w-1/2 w-full h-full">
+            <div className="grid grid-cols-12 grid-rows-12 h-full relative">
+              {/* Large square image - top left */}
+              <div className="col-span-6 row-span-6 border-t-[3px] border-l-[3px] border-b-[1.5px] border-r-[1.5px] border-black">
+                <img 
+                  src="/images/AboutUs.jpg" 
+                  alt="Raj" 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+              
+              {/* Rectangle - top right */}
+              <div className="col-span-6 row-span-3 col-start-7 border-t-[3px] border-r-[3px] border-b-[1.5px] border-l-[1.5px] border-black">
+                <img 
+                  src="/images/AboutUs.jpg" 
+                  alt="Smera" 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+              
+              {/* Small square - bottom left */}
+              <div className="col-span-3 row-span-6 row-start-7 border-t-[1.5px] border-l-[3px] border-b-[3px] border-r-[1.5px] border-black">
+                <img 
+                  src="/images/AboutUs.jpg" 
+                  alt="Mausham" 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+
+              {/* Small rectangle - middle bottom */}
+              <div className="col-span-3 row-span-6 col-start-4 row-start-7 border-t-[1.5px] border-l-[1.5px] border-b-[3px] border-r-[1.5px] border-black">
+                <img 
+                  src="/images/AboutUs.jpg" 
+                  alt="Nima" 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+              
+              {/* Tall rectangle - bottom right */}
+              <div className="col-span-6 row-span-9 col-start-7 row-start-4 border-t-[1.5px] border-r-[3px] border-b-[3px] border-l-[1.5px] border-black">
+                <img 
+                  src="/images/AboutUs.jpg" 
+                  alt="Utsav" 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
 
       {/* Modal for Selected Artwork */}
       <ArtModal

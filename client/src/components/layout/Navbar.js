@@ -24,7 +24,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center space-x-6 text-sm font-medium">
           <Link to="/" className="hover:underline">Home</Link>
           <Link to="/about" className="hover:underline">About</Link>
-          <Link to="/Browse" className="hover:underline">Browse</Link>
+          <Link to="/explore" className="hover:underline">Browse</Link>
           <div className="flex items-center gap-1 hover:underline cursor-pointer">
             <FiSearch />
             <span>Search</span>
@@ -49,7 +49,7 @@ const Navbar = () => {
         <div className="md:hidden mt-3 px-6 space-y-3 text-sm font-medium">
           <Link to="/" onClick={() => setMenuOpen(false)} className="block hover:underline">Home</Link>
           <Link to="/about" onClick={() => setMenuOpen(false)} className="block hover:underline">About</Link>
-          <Link to="/Browse" onClick={() => setMenuOpen(false)} className="block hover:underline">Browse</Link>
+          <Link to="/explore" onClick={() => setMenuOpen(false)} className="block hover:underline">Browse</Link>
           <div className="flex items-center gap-1 hover:underline cursor-pointer">
             <FiSearch />
             <span>Search</span>

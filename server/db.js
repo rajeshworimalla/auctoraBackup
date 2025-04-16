@@ -1,11 +1,15 @@
 require('dotenv').config();
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASS || '',       // ← leave blank if XAMPP has no password
-  database: process.env.DB_NAME || 'auctora',
+const pool = new Pool({
+  host: process.env.DB_HOST || 'db.YOUR-SUPABASE-HOST.supabase.co',
+  port: process.env.DB_PORT || 5432,
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASS || 'your-db-password',
+  database: process.env.DB_NAME || 'postgres',
+  ssl: {
+    rejectUnauthorized: false, // required for Supabase SSL
+  },
 });
 
 module.exports = pool;
