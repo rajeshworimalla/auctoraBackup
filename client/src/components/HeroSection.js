@@ -121,7 +121,7 @@ const HeroSection = () => {
         {/* Left Image */}
         <div className="md:w-1/2 w-full h-screen">
           <img
-            src="/images/sculpture.png"
+            src="/images/Sculpture.png"
             alt="Sculpture"
             className="w-full h-full object-cover"
           />
