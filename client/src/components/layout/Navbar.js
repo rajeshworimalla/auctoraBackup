@@ -13,7 +13,7 @@ const Navbar = () => {
         <div className="text-lg font-serif font-semibold tracking-wide">
           <Link to="/">
             <img
-              src="/images/logo.png"
+              src="/Images/logo.png"
               alt = "Logo"
               className = "w-12 h-auto object-contain"
               />
