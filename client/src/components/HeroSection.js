@@ -121,7 +121,7 @@ const HeroSection = () => {
         {/* Left Image */}
         <div className="md:w-1/2 w-full h-screen">
           <img
-            src="/images/Sculpture.png"
+            src="/Images/Sculpture.png"
             alt="Sculpture"
             className="w-full h-full object-cover"
           />
@@ -148,8 +148,8 @@ const HeroSection = () => {
           {/* Second Image (Couch) */}
           <div className="w-full h-[80%]">
             <img
-              src="/images/frame.png"
-              alt="Couch"
+              src="/Images/frame.png"
+              alt="Frame"
               className="w-full h-full object-contain"
             />
           </div>
@@ -241,7 +241,7 @@ const HeroSection = () => {
           </div>
           <div className="lg:w-1/2 w-full h-full">
             <img
-              src="/images/AboutUs1.jpg"
+              src="/Images/AboutUs1.jpg"
               alt="About Section Visual"
               className="w-full h-full object-cover"
             />
@@ -252,7 +252,7 @@ const HeroSection = () => {
         <div className="flex flex-col lg:flex-row h-[90vh]">
           <div className="lg:w-1/2 w-full h-full">
             <img
-              src="/images/AboutUs3.jpg"
+              src="/Images/AboutUs3.jpg"
               alt="Mission Section Visual"
               className="w-full h-full object-cover"
             />
@@ -317,7 +317,7 @@ const HeroSection = () => {
               {/* Large square image - top left */}
               <div className="col-span-6 row-span-6 border-t-[3px] border-l-[3px] border-b-[1.5px] border-r-[1.5px] border-black">
                 <img 
-                  src="/images/AboutUs.jpg" 
+                  src="/Images/AboutUs.jpg" 
                   alt="Raj" 
                   className="w-full h-full object-cover" 
                 />
@@ -326,7 +326,7 @@ const HeroSection = () => {
               {/* Rectangle - top right */}
               <div className="col-span-6 row-span-3 col-start-7 border-t-[3px] border-r-[3px] border-b-[1.5px] border-l-[1.5px] border-black">
                 <img 
-                  src="/images/AboutUs.jpg" 
+                  src="/Images/AboutUs.jpg" 
                   alt="Smera" 
                   className="w-full h-full object-cover" 
                 />
@@ -335,7 +335,7 @@ const HeroSection = () => {
               {/* Small square - bottom left */}
               <div className="col-span-3 row-span-6 row-start-7 border-t-[1.5px] border-l-[3px] border-b-[3px] border-r-[1.5px] border-black">
                 <img 
-                  src="/images/AboutUs.jpg" 
+                  src="/Images/AboutUs.jpg" 
                   alt="Mausham" 
                   className="w-full h-full object-cover" 
                 />
@@ -344,7 +344,7 @@ const HeroSection = () => {
               {/* Small rectangle - middle bottom */}
               <div className="col-span-3 row-span-6 col-start-4 row-start-7 border-t-[1.5px] border-l-[1.5px] border-b-[3px] border-r-[1.5px] border-black">
                 <img 
-                  src="/images/AboutUs.jpg" 
+                  src="/Images/AboutUs.jpg" 
                   alt="Nima" 
                   className="w-full h-full object-cover" 
                 />
@@ -353,7 +353,7 @@ const HeroSection = () => {
               {/* Tall rectangle - bottom right */}
               <div className="col-span-6 row-span-9 col-start-7 row-start-4 border-t-[1.5px] border-r-[3px] border-b-[3px] border-l-[1.5px] border-black">
                 <img 
-                  src="/images/AboutUs.jpg" 
+                  src="/Images/AboutUs.jpg" 
                   alt="Utsav" 
                   className="w-full h-full object-cover" 
                 />

@@ -6,7 +6,7 @@ const Footer = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10 px-6">
       <div className="flex items-center space-x-3">
             <img 
-                src="/images/logo.png"
+                src="/Images/logo.png"
                 alt="Auctora Logo" 
                 className="w-50 h-auto object-contain"
             />
