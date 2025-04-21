@@ -91,27 +91,71 @@ const ExplorePage = () => {
 
   const fetchAuctions = async () => {
     try {
+      console.log('Fetching auctions...');
       const { data, error } = await supabase
         .from('auctions')
         .select(`
           *,
-          artworks (*),
-          trendingbids (count)
+          artworks (*)
         `)
         .order('end_time', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching auctions:', error);
+        throw error;
+      }
 
-      // Add total_bids to each auction
-      const auctionsWithBids = data.map(auction => ({
-        ...auction,
-        total_bids: auction.trendingbids[0]?.count || 0
-      }));
+      console.log('Raw auction data:', data);
 
+      // Transform the data to include auction_id
+      const transformedAuctions = data.map(auction => {
+        const transformed = {
+          ...auction,
+          id: auction.auction_id,
+          auction_id: auction.auction_id,
+          title: auction.artworks?.title || 'Untitled',
+          description: auction.artworks?.description || '',
+          image_url: auction.artworks?.image_url || '',
+          current_highest_bid: auction.current_highest_bid || auction.starting_price,
+          starting_price: auction.starting_price || 0,
+          end_time: auction.end_time,
+          status: auction.status || 'active',
+          artworks: auction.artworks || null,
+          total_bids: 0
+        };
+        console.log('Transformed auction:', transformed);
+        return transformed;
+      });
+
+      console.log('All transformed auctions:', transformedAuctions);
+
+      // Fetch bid counts for each auction
+      const bidPromises = transformedAuctions.map(async (auction) => {
+        if (!auction.auction_id) {
+          console.error('Missing auction_id for auction:', auction);
+          return auction;
+        }
+
+        const { count, error: countError } = await supabase
+          .from('trendingbids')
+          .select('*', { count: 'exact' })
+          .eq('auction_id', auction.auction_id);
+        
+        if (countError) {
+          console.error('Error fetching bid count:', countError);
+        } else {
+          auction.total_bids = count || 0;
+        }
+        return auction;
+      });
+
+      const auctionsWithBids = await Promise.all(bidPromises);
+      console.log('Final auctions with bids:', auctionsWithBids);
+      
       setAuctions(auctionsWithBids);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching auctions:', error);
+      console.error('Error in fetchAuctions:', error);
       setLoading(false);
     }
   };

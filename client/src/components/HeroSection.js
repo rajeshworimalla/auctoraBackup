@@ -57,7 +57,7 @@ const HeroSection = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('Supabase response:', { artworks, error });
+      console.log('Raw artworks data:', artworks);
 
       if (error) {
         throw error;
@@ -69,15 +69,19 @@ const HeroSection = () => {
       }
 
       // Format the data
-      const formatted = artworks.map((art) => ({
-        id: art.id,
-        title: art.title,
-        images: [art.image_url],
-        price: `$${parseFloat(art.starting_price).toFixed(2)}`,
-        end_time: art.end_time ? new Date(art.end_time) : null,
-        description: art.description,
-        starting_price: art.starting_price
-      }));
+      const formatted = artworks.map((art) => {
+        console.log('Processing artwork:', art);
+        return {
+          id: art.id,
+          title: art.title,
+          image_url: art.image_url,
+          images: [art.image_url],
+          price: `$${parseFloat(art.starting_price).toFixed(2)}`,
+          end_time: art.end_time ? new Date(art.end_time) : null,
+          description: art.description,
+          starting_price: art.starting_price
+        };
+      });
 
       console.log('Formatted artworks:', formatted);
       setCards(formatted);
@@ -177,30 +181,39 @@ const HeroSection = () => {
                 width: 'max-content',
               }}
             >
-              {cards.map((art, index) => (
-                <div
-                  key={index}
-                  className="w-[250px] shrink-0 bg-black text-white p-6 rounded shadow-lg flex flex-col h-[450px]"
-                >
-                  <img
-                    src={art.images[0]}
-                    alt={art.title}
-                    className="w-full h-[300px] object-cover mb-4 rounded"
-                  />
-                  <div className="flex flex-col justify-between flex-grow">
-                    <div>
-                      <h3 className="text-base font-serif font-semibold mb-1 break-words">{art.title}</h3>
-                      <p className="text-sm mb-3">{art.price}</p>
+              {cards.map((art, index) => {
+                console.log('Rendering card:', art);
+                const imageUrl = art.image_url || (art.images && art.images[0]) || '/Images/placeholder-art.jpg';
+                console.log('Using image URL:', imageUrl);
+                return (
+                  <div
+                    key={index}
+                    className="w-[250px] shrink-0 bg-black text-white p-6 rounded shadow-lg flex flex-col h-[450px]"
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={art.title}
+                      className="w-full h-[300px] object-cover mb-4 rounded"
+                      onError={(e) => {
+                        console.log('Image failed to load:', imageUrl);
+                        e.target.src = '/Images/placeholder-art.jpg';
+                      }}
+                    />
+                    <div className="flex flex-col justify-between flex-grow">
+                      <div>
+                        <h3 className="text-base font-serif font-semibold mb-1 break-words">{art.title}</h3>
+                        <p className="text-sm mb-3">{art.price}</p>
+                      </div>
+                      <button
+                        onClick={() => setSelectedArt(art)}
+                        className="mt-auto border border-white px-3 py-1 text-xs font-light hover:bg-white hover:text-black transition duration-300 ease-in-out w-fit self-start"
+                      >
+                        Details
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setSelectedArt(art)}
-                      className="mt-auto border border-white px-3 py-1 text-xs font-light hover:bg-white hover:text-black transition duration-300 ease-in-out w-fit self-start"
-                    >
-                      Details
-                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

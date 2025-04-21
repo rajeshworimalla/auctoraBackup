@@ -1,40 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useEffect, useState } from 'react';
 import { FiClock, FiTrendingUp } from 'react-icons/fi';
 
 const AuctionCard = ({ auction, onClick }) => {
-  const [timeLeft, setTimeLeft] = useState(null);
+  const [timeLeft, setTimeLeft] = useState({});
 
   useEffect(() => {
+    if (!auction?.end_time) return;
+
     const calculateTimeLeft = () => {
-      const now = new Date().getTime();
       const end = new Date(auction.end_time).getTime();
+      const now = new Date().getTime();
       const distance = end - now;
 
       if (distance <= 0) {
         setTimeLeft({ expired: true });
-        return;
+      } else {
+        setTimeLeft({
+          days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((distance / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((distance / 1000 / 60) % 60),
+          seconds: Math.floor((distance / 1000) % 60),
+          expired: false,
+        });
       }
-
-      setTimeLeft({
-        days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((distance % (1000 * 60)) / 1000),
-        expired: false
-      });
     };
 
     calculateTimeLeft();
     const timer = setInterval(calculateTimeLeft, 1000);
 
     return () => clearInterval(timer);
-  }, [auction.end_time]);
+  }, [auction?.end_time]);
 
-  if (!timeLeft) return null;
+  if (!auction) return null;
 
-  const artwork = auction.artworks || {};
-  const currentBid = auction.current_highest_bid || auction.starting_price;
-  const totalBids = auction.total_bids || 0;
+  // Log the auction data when rendering
+  console.log('Rendering auction in AuctionCard:', auction);
 
   return (
     <div 
@@ -44,8 +45,8 @@ const AuctionCard = ({ auction, onClick }) => {
       {/* Image Container */}
       <div className="relative h-48 w-full">
         <img
-          src={artwork.image_url || '/Images/placeholder-art.jpg'}
-          alt={artwork.title}
+          src={auction.image_url || '/Images/placeholder-art.jpg'}
+          alt={auction.title}
           className="w-full h-full object-cover"
         />
         {/* Status Badge */}
@@ -60,42 +61,28 @@ const AuctionCard = ({ auction, onClick }) => {
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-lg font-serif font-medium text-gray-900 line-clamp-1">
-            {artwork.title || 'Untitled'}
+            {auction.title || 'Untitled'}
           </h3>
-        </div>
-
-        {/* Current Bid */}
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <p className="text-sm text-gray-500">Current Bid</p>
-            <p className="text-lg font-medium text-[#8B7355]">${currentBid}</p>
-          </div>
-          <div className="flex items-center text-gray-500">
-            <FiTrendingUp className="w-4 h-4 mr-1" />
-            <span className="text-sm">{totalBids} bids</span>
-          </div>
-        </div>
-
-        {/* Time Left */}
-        {!timeLeft.expired ? (
-          <div className="flex items-center space-x-1 text-sm text-gray-600">
-            <FiClock className="w-4 h-4" />
-            <span>
-              {timeLeft.days > 0 && `${timeLeft.days}d `}
-              {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
-            </span>
-          </div>
-        ) : (
-          <p className="text-sm text-red-500">Auction has ended</p>
-        )}
-
-        {/* Artist/Category */}
-        <div className="mt-2 flex justify-between items-center">
-          <span className="text-sm text-gray-500 capitalize">
-            {artwork.category || 'Mixed Media'}
+          <span className="text-sm font-medium text-[#8B7355]">
+            ${auction.current_highest_bid || auction.starting_price}
           </span>
-          <span className="text-xs text-gray-400">
-            {artwork.artist_name || 'Unknown Artist'}
+        </div>
+
+        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+          {auction.description || 'No description available'}
+        </p>
+
+        {/* Time Left and Bids */}
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-500">
+            {timeLeft.expired ? (
+              'Auction ended'
+            ) : (
+              `${timeLeft.days || 0}d ${timeLeft.hours || 0}h ${timeLeft.minutes || 0}m`
+            )}
+          </span>
+          <span className="text-gray-500">
+            {auction.total_bids} bid{auction.total_bids !== 1 ? 's' : ''}
           </span>
         </div>
       </div>
