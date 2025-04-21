@@ -189,7 +189,7 @@ const Login = () => {
             role: formData.role,
             username: `${formData.firstName} ${formData.lastName}`,
           },
-          emailRedirectTo: `${window.location.origin}/login`
+          emailRedirectTo: 'https://thiyhuatzybtmevtages.supabase.co/auth/v1/verify'
         }
       });
 
