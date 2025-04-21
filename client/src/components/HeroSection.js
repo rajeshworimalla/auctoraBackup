@@ -34,7 +34,7 @@ const HeroSection = () => {
       try {
         console.log('Testing Supabase connection...');
         const { data, error } = await supabase
-          .from('artworks')
+          .from('trending')
           .select('count')
           .single();
         
@@ -53,7 +53,7 @@ const HeroSection = () => {
       console.log('Fetching artworks from Supabase...');
       // Simplified query - just fetch artworks first
       const { data: artworks, error } = await supabase
-        .from('artworks')
+        .from('trending')
         .select('*')
         .order('created_at', { ascending: false });
 

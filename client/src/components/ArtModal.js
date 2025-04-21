@@ -1,11 +1,23 @@
 // ArtModal.js
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { supabase } from '../supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
 const ArtModal = ({ isOpen, onClose, art }) => {
   const [bidAmount, setBidAmount] = useState('');
   const [bids, setBids] = useState([]);
   const [timeLeft, setTimeLeft] = useState({});
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  // Check authentication status
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    checkUser();
+  }, []);
 
   // ⏳ Countdown Logic
   useEffect(() => {
@@ -38,30 +50,80 @@ const ArtModal = ({ isOpen, onClose, art }) => {
     return () => clearInterval(interval);
   }, [art?.end_time]);
   
-
   // 📥 Fetch Bids for This Artwork
   useEffect(() => {
     const fetchBids = async () => {
-      console.log("🖼️ Fetching bids for art ID:", art?.id);
-      if (art?.id && isOpen) {
-        try {
-          const res = await axios.get(`http://localhost:5000/api/bids/${art.id}`);
+      try {
+        const { data: auctionData, error: auctionError } = await supabase
+          .from('auctions')
+          .select('*')
+          .eq('id', art.id)
+          .single();
 
-          const sorted = (res.data.bids || [])
-            .sort((a, b) => b.amount - a.amount)
-            .slice(0, 3); // Top 3
-
-          setBids(sorted);
-        } catch (err) {
-          console.error('Error fetching bids:', err);
+        if (auctionError) {
+          console.error('Error fetching auction:', auctionError);
+          return;
         }
+
+        // Check if auction has ended
+        const now = new Date();
+        const end = new Date(auctionData.end_time);
+        if (now >= end && auctionData.status !== 'ended') {
+          // Update auction status to ended
+          await supabase
+            .from('auctions')
+            .update({ status: 'ended' })
+            .eq('id', art.id);
+        }
+
+        const { data: bidData, error: bidError } = await supabase
+          .from('trendingbids')
+          .select(`
+            *,
+            user:user_id (
+              id,
+              email
+            )
+          `)
+          .eq('auction_id', art.id)
+          .order('amount', { ascending: false })
+          .limit(3);
+
+        if (bidError) {
+          console.error('Error fetching bids:', bidError);
+          return;
+        }
+
+        setBids(bidData || []);
+      } catch (err) {
+        console.error('Error in fetchBids:', err);
       }
     };
 
     fetchBids();
   }, [art?.id, isOpen]);
 
-  // 📤 Submit New Bid
+  // Handle bid button click
+  const handleBidClick = () => {
+    if (!user) {
+      const confirmLogin = window.confirm('You need to be logged in to place a bid. Would you like to log in now?');
+      if (confirmLogin) {
+        // Store the current artwork details in sessionStorage
+        sessionStorage.setItem('pendingBid', JSON.stringify({
+          auctionId: art.id,
+          amount: bidAmount
+        }));
+        onClose(); // Close the modal
+        navigate('/login'); // Redirect to login page
+      }
+      return;
+    }
+
+    // If user is logged in, proceed with bid
+    handleBid();
+  };
+
+  // Submit bid logic
   const handleBid = async () => {
     if (isNaN(bidAmount) || bidAmount <= 0) {
       alert('Please enter a valid bid amount');
@@ -76,31 +138,72 @@ const ArtModal = ({ isOpen, onClose, art }) => {
     }
 
     try {
-      const res = await axios.post('http://localhost:5000/api/bids', {
-        artId: art.id,
-        amount: bidAmount,
-        user: 'Guest',
+      console.log('Attempting to place bid:', {
+        auction_id: art.id,
+        amount: parseFloat(bidAmount),
+        user_id: user.id // No need to parse UUID
       });
 
-      const updatedBids = [...bids, res.data.bid]
+      // Start a transaction to update both the bid and auction status
+      const { data: bidData, error: bidError } = await supabase
+        .from('trendingbids')
+        .insert([
+          {
+            auction_id: art.id,
+            amount: parseFloat(bidAmount),
+            user_id: user.id
+          }
+        ])
+        .select();
+
+      if (bidError) {
+        console.error('Supabase error details:', bidError);
+        throw bidError;
+      }
+
+      // Update the auction's current highest bid and highest bidder
+      const { error: auctionError } = await supabase
+        .from('auctions')
+        .update({
+          current_highest_bid: parseFloat(bidAmount),
+          highest_bidder_id: user.id,
+          status: 'active'
+        })
+        .eq('id', art.id);
+
+      if (auctionError) {
+        console.error('Error updating auction:', auctionError);
+        throw auctionError;
+      }
+
+      console.log('Bid placed successfully:', bidData);
+
+      const updatedBids = [...bids, bidData[0]]
         .sort((a, b) => b.amount - a.amount)
         .slice(0, 3);
 
       setBids(updatedBids);
       setBidAmount('');
-      alert('Bid placed!');
+      alert('Bid placed successfully!');
     } catch (err) {
-      console.error('Error placing bid:', err);
-      alert('Failed to place bid');
+      console.error('Detailed error when placing bid:', {
+        error: err,
+        message: err.message,
+        details: err.details,
+        hint: err.hint
+      });
+      alert(`Failed to place bid: ${err.message || 'Please try again.'}`);
     }
   };
 
   if (!isOpen || !art) return null;
 
+  // Get the artwork image URL from either the auction or artwork object
+  const imageUrl = art.artworks?.image_url || art.image_url || '/Images/placeholder-art.jpg';
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white w-[90%] max-w-lg rounded-lg p-6 relative">
-
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -110,22 +213,19 @@ const ArtModal = ({ isOpen, onClose, art }) => {
         </button>
 
         {/* Title */}
-        <h2 className="text-2xl font-serif mb-4">{art.title}</h2>
+        <h2 className="text-2xl font-serif mb-4">{art.artworks?.title || art.title}</h2>
 
-        {/* Images */}
-        <div className="flex overflow-x-auto space-x-4 mb-4">
-          {art.images.map((img, idx) => (
-            <img
-              key={idx}
-              src={img}
-              alt={art.title}
-              className="w-40 h-40 object-cover rounded"
-            />
-          ))}
+        {/* Image */}
+        <div className="mb-4">
+          <img
+            src={imageUrl}
+            alt={art.artworks?.title || art.title}
+            className="w-full h-64 object-cover rounded"
+          />
         </div>
 
         {/* Description */}
-        <p className="text-gray-700 mb-4">{art.description}</p>
+        <p className="text-gray-700 mb-4">{art.artworks?.description || art.description}</p>
 
         {/* Countdown */}
         {timeLeft?.expired ? (
@@ -137,7 +237,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
         )}
 
         {/* Bid Input */}
-        <div className="flex items-center space-x-2 mb-4">
+        <div className="flex items-center gap-2 mb-4">
           <input
             type="number"
             placeholder="Your bid"
@@ -147,7 +247,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
             disabled={timeLeft.expired}
           />
           <button
-            onClick={handleBid}
+            onClick={handleBidClick}
             disabled={timeLeft.expired}
             className={`px-4 py-1 text-sm border ${
               timeLeft.expired
@@ -155,7 +255,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
                 : 'bg-black text-white hover:bg-gray-800'
             }`}
           >
-            Place Bid
+            {user ? 'Place Bid' : 'Login to Bid'}
           </button>
         </div>
 
@@ -167,14 +267,16 @@ const ArtModal = ({ isOpen, onClose, art }) => {
           ) : (
             <ul className="text-sm space-y-1 max-h-32 overflow-y-auto text-yellow-900 font-semibold">
               {bids.map((b, i) => (
-                <li key={i}>
-                  🪙 ${b.amount} {i === 0 && <span className="text-yellow-500 font-bold">★ Highest</span>}
+                <li key={i} className="flex items-center justify-between">
+                  <span>
+                    ${b.amount} by {b.user?.email || 'Anonymous'}
+                  </span>
+                  {i === 0 && <span className="text-yellow-500 font-bold ml-2">★ Highest</span>}
                 </li>
               ))}
             </ul>
           )}
         </div>
-
       </div>
     </div>
   );
