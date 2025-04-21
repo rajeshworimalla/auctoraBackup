@@ -9,17 +9,47 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if we have access to the recovery session
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+    const handleRecoveryToken = async () => {
+      try {
+        const fragment = window.location.hash;
+        if (!fragment) {
+          console.error('No recovery token found in URL');
+          navigate('/login');
+          return;
+        }
+
+        // Parse the URL fragment
+        const params = new URLSearchParams(fragment.replace('#', '?'));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        const type = params.get('type');
+
+        if (!accessToken || type !== 'recovery') {
+          console.error('Invalid recovery token');
+          navigate('/login');
+          return;
+        }
+
+        // Set the session
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+
+        if (error) {
+          console.error('Error setting session:', error);
+          navigate('/login');
+        }
+      } catch (err) {
+        console.error('Error processing recovery:', err);
         navigate('/login');
       }
     };
-    checkSession();
+
+    handleRecoveryToken();
   }, [navigate]);
 
-  const handlePasswordReset = async (e) => {
+  const handlePasswordUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -35,6 +65,7 @@ const ResetPassword = () => {
       await supabase.auth.signOut();
       navigate('/login');
     } catch (error) {
+      console.error('Error updating password:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -68,7 +99,7 @@ const ResetPassword = () => {
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handlePasswordReset}>
+        <form className="mt-8 space-y-6" onSubmit={handlePasswordUpdate}>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               New Password

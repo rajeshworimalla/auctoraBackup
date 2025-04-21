@@ -189,7 +189,9 @@ const Login = () => {
             role: formData.role,
             username: `${formData.firstName} ${formData.lastName}`,
           },
-          emailRedirectTo: 'https://thiyhuatzybtmevtages.supabase.co/auth/v1/verify'
+          emailRedirectTo: process.env.NODE_ENV === 'production' 
+            ? 'https://auctora-idhi.onrender.com/login'
+            : 'http://localhost:3000/login'
         }
       });
 
@@ -231,12 +233,13 @@ const Login = () => {
     setLoading(true);
     setError(null);
 
+    const redirectTo = process.env.NODE_ENV === 'production'
+      ? 'https://auctora-idhi.onrender.com/reset-password'
+      : 'http://localhost:3000/reset-password';
+
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-        data: {
-          email: formData.email
-        }
+        redirectTo: redirectTo
       });
 
       if (error) throw error;
