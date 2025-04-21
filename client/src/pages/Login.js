@@ -233,21 +233,23 @@ const Login = () => {
     setLoading(true);
     setError(null);
 
-    const redirectTo = process.env.NODE_ENV === 'production'
-      ? 'https://auctora-idhi.onrender.com/reset-password'
-      : 'http://localhost:3000/reset-password';
-
     try {
+      // Get the current domain dynamically
+      const currentDomain = window.location.origin;
+      const redirectTo = `${currentDomain}/reset-password`;
+
+      console.log('Sending reset password email with redirect to:', redirectTo); // Debug log
+
       const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
         redirectTo: redirectTo
       });
 
       if (error) throw error;
-
+      
       setResetEmailSent(true);
       setError(null);
     } catch (error) {
-      console.error('Reset password error:', error);
+      console.error('Error sending reset password email:', error);
       setError(error.message);
     } finally {
       setLoading(false);
