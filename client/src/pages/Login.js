@@ -241,7 +241,7 @@ const Login = () => {
       console.log('Site URL for password reset:', siteUrl);
 
       const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: `${siteUrl}/reset-password#`,
+        redirectTo: `${siteUrl}/reset-password`,
       });
 
       if (error) throw error;

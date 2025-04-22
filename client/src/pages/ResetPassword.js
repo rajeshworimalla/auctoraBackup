@@ -13,22 +13,20 @@ const ResetPassword = () => {
   useEffect(() => {
     const verifyToken = async () => {
       try {
-        // Log the full URL and its parts
+        // Log the full URL for debugging
         const fullUrl = window.location.href;
         console.log('Full URL:', fullUrl);
-        console.log('URL parts:', {
-          pathname: window.location.pathname,
-          search: window.location.search,
-          hash: window.location.hash,
-          href: window.location.href
-        });
 
-        // Get the hash without the # symbol
-        const hashFragment = window.location.hash.substring(1);
-        console.log('Hash fragment:', hashFragment);
+        // Handle both single and double hash cases
+        const hashPart = fullUrl.substring(fullUrl.indexOf('#') + 1);
+        console.log('Hash part:', hashPart);
 
-        // Parse the hash parameters
-        const params = new URLSearchParams(hashFragment);
+        // If we have a double hash, take everything after the second hash
+        const finalHash = hashPart.includes('#') ? hashPart.substring(hashPart.indexOf('#') + 1) : hashPart;
+        console.log('Final hash:', finalHash);
+
+        // Parse the parameters
+        const params = new URLSearchParams(finalHash);
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
         const type = params.get('type');
