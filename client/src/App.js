@@ -36,7 +36,7 @@ function App() {
   }
 
   return (
-    <Router>
+    <Router basename="/">
       <div className="flex flex-col min-h-screen">
         <Navbar user={user} />
         <main className="flex-grow">

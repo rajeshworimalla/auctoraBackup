@@ -2,6 +2,7 @@
   "name": "client",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://auctora-idhi.onrender.com",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.3",
     "axios": "^1.8.4",
