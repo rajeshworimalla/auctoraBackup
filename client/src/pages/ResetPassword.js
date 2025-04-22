@@ -11,45 +11,52 @@ const ResetPassword = () => {
   useEffect(() => {
     const handleRecoveryToken = async () => {
       try {
-        const fragment = window.location.hash;
-        if (!fragment) {
-          console.error('No recovery token found in URL');
-          navigate('/login');
-          return;
-        }
+        // Get the full URL hash (including #)
+        const hash = window.location.hash;
+        
+        // Extract parameters from the hash
+        const hashParams = new URLSearchParams(hash.replace('#', ''));
+        
+        // Get the access token and type
+        const accessToken = hashParams.get('access_token');
+        const type = hashParams.get('type');
+        const refreshToken = hashParams.get('refresh_token');
 
-        // Parse the URL fragment
-        const params = new URLSearchParams(fragment.replace('#', '?'));
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-        const type = params.get('type');
+        console.log('URL Parameters:', {
+          hasAccessToken: !!accessToken,
+          type,
+          hasRefreshToken: !!refreshToken
+        });
 
         if (!accessToken || type !== 'recovery') {
-          console.error('Invalid recovery token');
-          navigate('/login');
+          setError('Invalid or expired reset link. Please request a new one.');
+          setTimeout(() => navigate('/login'), 3000);
           return;
         }
 
-        // Set the session
-        const { data, error } = await supabase.auth.setSession({
+        // Set the session with the tokens
+        const { error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken
         });
 
-        if (error) {
-          console.error('Error setting session:', error);
-          navigate('/login');
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          throw sessionError;
         }
-      } catch (err) {
-        console.error('Error processing recovery:', err);
-        navigate('/login');
+
+        console.log('Session set successfully');
+      } catch (error) {
+        console.error('Recovery process error:', error);
+        setError('An error occurred. Please try again or request a new reset link.');
+        setTimeout(() => navigate('/login'), 3000);
       }
     };
 
     handleRecoveryToken();
   }, [navigate]);
 
-  const handlePasswordUpdate = async (e) => {
+  const handlePasswordReset = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -99,7 +106,7 @@ const ResetPassword = () => {
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handlePasswordUpdate}>
+        <form className="mt-8 space-y-6" onSubmit={handlePasswordReset}>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               New Password
@@ -114,6 +121,7 @@ const ResetPassword = () => {
               placeholder="Enter your new password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              minLength={6}
             />
           </div>
 

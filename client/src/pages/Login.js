@@ -177,6 +177,10 @@ const Login = () => {
         }
       });
 
+      // Get the current URL origin
+      const siteUrl = window.location.origin;
+      console.log('Site URL:', siteUrl);
+
       // Sign up the user with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -189,9 +193,7 @@ const Login = () => {
             role: formData.role,
             username: `${formData.firstName} ${formData.lastName}`,
           },
-          emailRedirectTo: process.env.NODE_ENV === 'production' 
-            ? 'https://auctora-idhi.onrender.com/login'
-            : 'http://localhost:3000/login'
+          emailRedirectTo: `${siteUrl}/login`
         }
       });
 
@@ -234,22 +236,23 @@ const Login = () => {
     setError(null);
 
     try {
-      // Get the current domain dynamically
-      const currentDomain = window.location.origin;
-      const redirectTo = `${currentDomain}/reset-password`;
-
-      console.log('Sending reset password email with redirect to:', redirectTo); // Debug log
+      // Get the current URL origin
+      const siteUrl = window.location.origin;
+      console.log('Site URL for password reset:', siteUrl);
 
       const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: redirectTo
+        redirectTo: `${siteUrl}/reset-password`,
+        data: {
+          email: formData.email
+        }
       });
 
       if (error) throw error;
-      
+
       setResetEmailSent(true);
       setError(null);
     } catch (error) {
-      console.error('Error sending reset password email:', error);
+      console.error('Reset password error:', error);
       setError(error.message);
     } finally {
       setLoading(false);

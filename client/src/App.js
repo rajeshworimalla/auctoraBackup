@@ -25,6 +25,7 @@ function App() {
     // Listen for changes on auth state (sign in, sign out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -45,7 +46,7 @@ function App() {
             <Route path="/browse" element={<BrowsePage />} />
             <Route path="/cart" element={user ? <CartPage /> : <Navigate to="/login" />} />
             <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
-            <Route path="/login" element={!user ? <Login /> : <Navigate to="/profile" />} />
+            <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
           </Routes>
         </main>
