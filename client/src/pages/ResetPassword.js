@@ -13,47 +13,40 @@ const ResetPassword = () => {
   useEffect(() => {
     const verifyToken = async () => {
       try {
-        // Debug URL information
-        console.log('Current URL:', window.location.href);
-        console.log('Location state:', {
-          pathname: location.pathname,
-          search: location.search,
-          hash: location.hash
+        // Log the full URL and its parts
+        const fullUrl = window.location.href;
+        console.log('Full URL:', fullUrl);
+        console.log('URL parts:', {
+          pathname: window.location.pathname,
+          search: window.location.search,
+          hash: window.location.hash,
+          href: window.location.href
         });
 
-        // Get the full URL and try to extract parameters
-        const fullUrl = window.location.href;
-        let accessToken, refreshToken, type;
+        // Get the hash without the # symbol
+        const hashFragment = window.location.hash.substring(1);
+        console.log('Hash fragment:', hashFragment);
 
-        // Try parsing as complete URL first
-        try {
-          const url = new URL(fullUrl);
-          const hashParams = new URLSearchParams(url.hash.replace('#', ''));
-          const searchParams = new URLSearchParams(url.search);
+        // Parse the hash parameters
+        const params = new URLSearchParams(hashFragment);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        const type = params.get('type');
 
-          accessToken = hashParams.get('access_token') || searchParams.get('access_token');
-          refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
-          type = hashParams.get('type') || searchParams.get('type');
-
-          console.log('Parsed URL parameters:', {
-            hasAccessToken: !!accessToken,
-            hasRefreshToken: !!refreshToken,
-            type,
-            fromHash: !!hashParams.get('access_token'),
-            fromSearch: !!searchParams.get('access_token')
-          });
-        } catch (urlError) {
-          console.error('Error parsing URL:', urlError);
-        }
+        console.log('Parsed parameters:', {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          type: type
+        });
 
         if (!accessToken || type !== 'recovery') {
-          console.log('Invalid parameters:', { hasToken: !!accessToken, type });
+          console.log('Invalid parameters detected');
           setError('Invalid or expired reset link. Please request a new password reset.');
           return;
         }
 
-        // Attempt to set the session
-        console.log('Setting session with tokens...');
+        // Set the session
+        console.log('Setting session...');
         const { data, error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken
@@ -65,10 +58,10 @@ const ResetPassword = () => {
         }
 
         console.log('Session set successfully:', {
-          hasData: !!data,
-          user: !!data?.user
+          hasUser: !!data?.user,
+          sessionData: data
         });
-        
+
         setIsVerified(true);
       } catch (err) {
         console.error('Reset password error:', err);
@@ -76,9 +69,8 @@ const ResetPassword = () => {
       }
     };
 
-    // Add a small delay to ensure URL is fully processed
-    setTimeout(verifyToken, 100);
-  }, [location]);
+    verifyToken();
+  }, []);
 
   const handlePasswordReset = async (e) => {
     e.preventDefault();
@@ -91,26 +83,22 @@ const ResetPassword = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Attempting to update password...');
 
       const { data, error } = await supabase.auth.updateUser({
         password: password
       });
 
-      if (error) {
-        console.error('Password update error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Password updated successfully');
-      
-      // Sign out and redirect
+      // Sign out the user
       await supabase.auth.signOut();
+      
+      // Show success message and redirect
       alert('Password updated successfully! Please sign in with your new password.');
       navigate('/login');
     } catch (error) {
-      console.error('Password reset error:', error);
-      setError(error.message || 'Failed to reset password. Please try again.');
+      console.error('Error updating password:', error);
+      setError(error.message || 'Failed to update password. Please try again.');
     } finally {
       setLoading(false);
     }
