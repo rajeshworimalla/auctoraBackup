@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import Navbar from "./components/layout/Navbar";
 import HomePage from "./pages/HomePage";
@@ -36,7 +36,7 @@ function App() {
   }
 
   return (
-    <Router basename="/">
+    <Router>
       <div className="flex flex-col min-h-screen">
         <Navbar user={user} />
         <main className="flex-grow">
