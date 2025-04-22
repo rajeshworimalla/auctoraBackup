@@ -6,38 +6,33 @@ const ResetPassword = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isVerified, setIsVerified] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleRecoveryToken = async () => {
+    const verifyToken = async () => {
       try {
-        // Get the full URL hash (including #)
+        // Get the hash fragment from the URL
         const hash = window.location.hash;
-        
-        // Extract parameters from the hash
-        const hashParams = new URLSearchParams(hash.replace('#', ''));
-        
-        // Get the access token and type
-        const accessToken = hashParams.get('access_token');
-        const type = hashParams.get('type');
-        const refreshToken = hashParams.get('refresh_token');
-
-        console.log('URL Parameters:', {
-          hasAccessToken: !!accessToken,
-          type,
-          hasRefreshToken: !!refreshToken
-        });
-
-        if (!accessToken || type !== 'recovery') {
-          setError('Invalid or expired reset link. Please request a new one.');
-          setTimeout(() => navigate('/login'), 3000);
+        if (!hash) {
+          setError('No reset token found. Please request a new password reset link.');
           return;
         }
 
-        // Set the session with the tokens
+        // Parse the hash fragment
+        const hashParams = new URLSearchParams(hash.replace('#', ''));
+        const accessToken = hashParams.get('access_token');
+        const type = hashParams.get('type');
+
+        if (!accessToken || type !== 'recovery') {
+          setError('Invalid reset link. Please request a new one.');
+          return;
+        }
+
+        // Set the session with the access token
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
-          refresh_token: refreshToken
+          refresh_token: hashParams.get('refresh_token')
         });
 
         if (sessionError) {
@@ -45,39 +40,70 @@ const ResetPassword = () => {
           throw sessionError;
         }
 
-        console.log('Session set successfully');
-      } catch (error) {
-        console.error('Recovery process error:', error);
-        setError('An error occurred. Please try again or request a new reset link.');
-        setTimeout(() => navigate('/login'), 3000);
+        setIsVerified(true);
+      } catch (err) {
+        console.error('Error verifying token:', err);
+        setError('An error occurred while verifying your reset link. Please request a new one.');
       }
     };
 
-    handleRecoveryToken();
-  }, [navigate]);
+    verifyToken();
+  }, []);
 
   const handlePasswordReset = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
+    
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
 
     try {
+      setLoading(true);
+      setError(null);
+
       const { error } = await supabase.auth.updateUser({
         password: password
       });
 
       if (error) throw error;
 
-      alert('Password updated successfully! Please sign in with your new password.');
+      // Sign out the user after successful password reset
       await supabase.auth.signOut();
+      
+      // Show success message and redirect
+      alert('Password updated successfully! Please sign in with your new password.');
       navigate('/login');
     } catch (error) {
-      console.error('Error updating password:', error);
+      console.error('Error resetting password:', error);
       setError(error.message);
     } finally {
       setLoading(false);
     }
   };
+
+  if (!isVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#D3CABE] py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8 bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-gray-100">
+          <div className="text-center">
+            <h2 className="text-2xl font-serif font-bold text-gray-900">
+              Verifying Reset Link
+            </h2>
+            {error ? (
+              <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-gray-600">
+                Please wait while we verify your reset link...
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#D3CABE] py-12 px-4 sm:px-6 lg:px-8">
