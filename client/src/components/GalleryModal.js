@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { FiShoppingCart, FiHeart, FiShare2, FiInfo } from 'react-icons/fi';
+import { FiShoppingCart, FiHeart, FiShare2, FiInfo, FiMinus, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 
 const GalleryModal = ({ isOpen, onClose, artwork }) => {
   const [user, setUser] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,6 +17,13 @@ const GalleryModal = ({ isOpen, onClose, artwork }) => {
     };
     checkUser();
   }, []);
+
+  const handleQuantityChange = (change) => {
+    const newQuantity = quantity + change;
+    if (newQuantity >= 1) {
+      setQuantity(newQuantity);
+    }
+  };
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -32,6 +40,7 @@ const GalleryModal = ({ isOpen, onClose, artwork }) => {
     }
 
     try {
+      setLoading(true);
       // Check if item already exists in cart
       const { data: existingItem, error: checkError } = await supabase
         .from('cart_items')
@@ -48,7 +57,10 @@ const GalleryModal = ({ isOpen, onClose, artwork }) => {
         // Update quantity if item exists
         const { error: updateError } = await supabase
           .from('cart_items')
-          .update({ quantity: existingItem.quantity + quantity })
+          .update({ 
+            quantity: existingItem.quantity + quantity,
+            updated_at: new Date().toISOString()
+          })
           .eq('id', existingItem.id);
 
         if (updateError) throw updateError;
@@ -73,11 +85,13 @@ const GalleryModal = ({ isOpen, onClose, artwork }) => {
     } catch (error) {
       console.error('Error adding to cart:', error);
       alert('Failed to add to cart. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleBuyNow = () => {
-    handleAddToCart();
+  const handleBuyNow = async () => {
+    await handleAddToCart();
     navigate('/cart');
   };
 
@@ -123,94 +137,80 @@ const GalleryModal = ({ isOpen, onClose, artwork }) => {
   if (!isOpen || !artwork) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white w-[90%] max-w-4xl rounded-lg relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white w-[90%] max-w-4xl rounded-lg p-6 relative">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-black text-xl z-10"
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
         >
           ×
         </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-          {/* Left Column - Image and Gallery */}
-          <div className="space-y-4">
-            <div className="aspect-square rounded-lg overflow-hidden">
-              <img
-                src={artwork.image_url || '/Images/placeholder-art.jpg'}
-                alt={artwork.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            
-            {/* Additional Images */}
-            <div className="grid grid-cols-4 gap-2">
-              {[artwork.image_url, ...Array(3)].map((img, idx) => (
-                <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                  {img && (
-                    <img
-                      src={img}
-                      alt={`${artwork.title} view ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Image Section */}
+          <div>
+            <img
+              src={artwork.image_url || '/Images/placeholder-art.jpg'}
+              alt={artwork.title}
+              className="w-full h-[400px] object-contain bg-gray-50 rounded-lg"
+            />
           </div>
 
-          {/* Right Column - Details and Actions */}
+          {/* Details Section */}
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-serif mb-2">{artwork.title}</h2>
-              <p className="text-gray-600 mb-4">by {artwork.artist_name || 'Unknown Artist'}</p>
-              <div className="flex items-center space-x-4 mb-6">
-                <span className="text-2xl font-medium text-[#8B7355]">
-                  ${artwork.price || 'Price on request'}
-                </span>
-                {artwork.original_price && (
-                  <span className="text-lg text-gray-400 line-through">
-                    ${artwork.original_price}
-                  </span>
-                )}
+              <h2 className="text-2xl font-serif font-bold text-gray-900">{artwork.title}</h2>
+              <p className="text-gray-600 mt-1">by {artwork.artist_name}</p>
+            </div>
+
+            <p className="text-gray-700">{artwork.description}</p>
+
+            <div className="space-y-2">
+              <p className="text-lg font-medium text-gray-900">${artwork.price}</p>
+              <p className="text-sm text-gray-500">Category: {artwork.category}</p>
+              <p className="text-sm text-gray-500">Medium: {artwork.medium}</p>
+            </div>
+
+            {/* Quantity Selector */}
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-700">Quantity:</span>
+              <div className="flex items-center border rounded">
+                <button
+                  onClick={() => handleQuantityChange(-1)}
+                  className="p-2 hover:bg-gray-100"
+                  disabled={quantity <= 1}
+                >
+                  <FiMinus className="w-4 h-4" />
+                </button>
+                <span className="px-4 py-2 border-x">{quantity}</span>
+                <button
+                  onClick={() => handleQuantityChange(1)}
+                  className="p-2 hover:bg-gray-100"
+                >
+                  <FiPlus className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
-            {/* Artwork Details */}
-            <div className="space-y-3 text-sm">
-              <p><span className="font-medium">Medium:</span> {artwork.medium || 'Not specified'}</p>
-              <p><span className="font-medium">Dimensions:</span> {artwork.dimensions || 'Not specified'}</p>
-              <p><span className="font-medium">Year:</span> {artwork.year || 'Unknown'}</p>
-              <p><span className="font-medium">Category:</span> {artwork.category || 'Mixed Media'}</p>
-              <p><span className="font-medium">Style:</span> {artwork.style || 'Contemporary'}</p>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-gray-700">{artwork.description}</p>
-            </div>
-
+            {/* Action Buttons */}
             <div className="space-y-3 pt-4">
               <div className="flex items-center gap-2">
                 <button
-                  className="flex-1 bg-[#8B7355] text-white py-3 px-6 rounded-lg hover:bg-[#6B563D] transition-all duration-200"
-                  onClick={() => {/* Add to Cart logic */}}
+                  className={`flex-1 bg-[#8B7355] text-white py-3 px-6 rounded-lg hover:bg-[#6B563D] transition-all duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={handleAddToCart}
+                  disabled={loading}
                 >
-                  Add to Cart
+                  {loading ? 'Adding...' : 'Add to Cart'}
                 </button>
                 <button
-                  className="flex-1 border border-[#8B7355] text-[#8B7355] py-3 px-6 rounded-lg hover:bg-[#8B7355] hover:text-white transition-all duration-200"
-                  onClick={() => {/* Buy Now logic */}}
+                  className={`flex-1 border border-[#8B7355] text-[#8B7355] py-3 px-6 rounded-lg hover:bg-[#8B7355] hover:text-white transition-all duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={handleBuyNow}
+                  disabled={loading}
                 >
                   Buy Now
                 </button>
               </div>
-              <button
-                className="w-full border border-gray-300 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-50 transition-all duration-200"
-                onClick={() => {/* Add to Wishlist logic */}}
-              >
-                Add to Wishlist
-              </button>
             </div>
 
             {/* Shipping and Returns Info */}

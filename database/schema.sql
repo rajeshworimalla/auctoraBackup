@@ -17,6 +17,7 @@ DROP POLICY IF EXISTS "Users can only update their own bids" ON trendingbids;
 DROP TABLE IF EXISTS trendingbids;
 DROP TABLE IF EXISTS auctions;
 DROP TABLE IF EXISTS artworks;
+DROP TABLE IF EXISTS cart_items;
 
 -- Create artworks table
 CREATE TABLE artworks (
@@ -61,17 +62,31 @@ CREATE TABLE trendingbids (
     CONSTRAINT valid_bid_amount CHECK (amount > 0)
 );
 
+-- Create cart_items table
+CREATE TABLE cart_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    artwork_id UUID REFERENCES artworks(artwork_id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    price DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for better query performance
 CREATE INDEX idx_artworks_owner_id ON artworks(owner_id);
 CREATE INDEX idx_auctions_artwork_id ON auctions(artwork_id);
 CREATE INDEX idx_auctions_status ON auctions(status);
 CREATE INDEX idx_trendingbids_auction_id ON trendingbids(auction_id);
 CREATE INDEX idx_trendingbids_bidder_id ON trendingbids(bidder_id);
+CREATE INDEX idx_cart_items_user_id ON cart_items(user_id);
+CREATE INDEX idx_cart_items_artwork_id ON cart_items(artwork_id);
 
 -- Enable Row Level Security
 ALTER TABLE artworks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE auctions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trendingbids ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for artworks
 CREATE POLICY "Anyone can view artworks"
@@ -145,6 +160,27 @@ CREATE POLICY "Users can only update their own bids"
     ON trendingbids FOR UPDATE
     TO authenticated
     USING (auth.uid() = bidder_id);
+
+-- Create policies for cart_items
+CREATE POLICY "Users can view their own cart items"
+    ON cart_items FOR SELECT
+    TO authenticated
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own cart items"
+    ON cart_items FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own cart items"
+    ON cart_items FOR UPDATE
+    TO authenticated
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own cart items"
+    ON cart_items FOR DELETE
+    TO authenticated
+    USING (auth.uid() = user_id);
 
 -- Create function to update auction status
 CREATE OR REPLACE FUNCTION check_auction_status()
