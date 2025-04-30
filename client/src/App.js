@@ -4,7 +4,6 @@ import { supabase } from "./supabaseClient";
 import Navbar from "./components/layout/Navbar";
 import HomePage from "./pages/HomePage";
 import ExplorePage from "./pages/ExplorePage";
-import BrowsePage from "./pages/BrowsePage";
 import CartPage from "./pages/CartPage";
 import Login from "./pages/Login";
 import Footer from "./components/layout/Footer";
@@ -43,7 +42,6 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/explore" element={<ExplorePage />} />
-            <Route path="/browse" element={<BrowsePage />} />
             <Route path="/cart" element={user ? <CartPage /> : <Navigate to="/login" />} />
             <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
             <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />

@@ -50,58 +50,110 @@ const ArtModal = ({ isOpen, onClose, art }) => {
     return () => clearInterval(interval);
   }, [art?.end_time]);
   
-  // 📥 Fetch Bids for This Artwork
+  // Debug: Log modal open/close and art prop
   useEffect(() => {
-    const fetchBids = async () => {
-      try {
-        const { data: auctionData, error: auctionError } = await supabase
-          .from('auctions')
-          .select('*')
-          .eq('id', art.id)
-          .single();
+    console.log('[ArtModal] isOpen:', isOpen, 'art:', art);
+  }, [isOpen, art]);
 
-        if (auctionError) {
-          console.error('Error fetching auction:', auctionError);
-          return;
-        }
-
-        // Check if auction has ended
-        const now = new Date();
-        const end = new Date(auctionData.end_time);
-        if (now >= end && auctionData.status !== 'ended') {
-          // Update auction status to ended
-          await supabase
-            .from('auctions')
-            .update({ status: 'ended' })
-            .eq('id', art.id);
-        }
-
-        const { data: bidData, error: bidError } = await supabase
-          .from('trendingbids')
-          .select(`
-            *,
-            user:bidder_id (
-              id,
-              email
-            )
-          `)
-          .eq('auction_id', art.auction_id || art.id)
-          .order('amount', { ascending: false })
-          .limit(3);
-
-        if (bidError) {
-          console.error('Error fetching bids:', bidError);
-          return;
-        }
-
-        setBids(bidData || []);
-      } catch (err) {
-        console.error('Error in fetchBids:', err);
+  // Fetch bids for this artwork/auction
+  const fetchBids = async () => {
+    try {
+      const auctionId = art?.auction_id || art?.id;
+      console.log('[ArtModal] fetchBids called. auctionId:', auctionId);
+      if (!auctionId) {
+        console.error('[ArtModal] No auction ID found', art);
+        return;
       }
-    };
+      const { data: auctionData, error: auctionError } = await supabase
+        .from('auctions')
+        .select('*')
+        .eq('auction_id', auctionId)
+        .single();
+      if (auctionError) {
+        console.error('[ArtModal] Error fetching auction:', auctionError);
+        return;
+      }
+      // Check if auction has ended
+      const now = new Date();
+      const end = new Date(auctionData.end_time);
+      if (now >= end && auctionData.status !== 'ended') {
+        await supabase
+          .from('auctions')
+          .update({ status: 'ended' })
+          .eq('auction_id', auctionId);
+      }
 
-    fetchBids();
-  }, [art?.id, isOpen]);
+      console.log('Fetching bids with query:', {
+        auctionId,
+        query: '*',
+        order: 'amount.desc',
+        limit: 3
+      });
+
+      const { data: bidData, error: bidError } = await supabase
+        .from('bids')
+        .select('*')
+        .eq('auction_id', auctionId)
+        .order('amount', { ascending: false })
+        .limit(3);
+
+      if (bidError) {
+        console.error('Error fetching bids:', bidError);
+        return;
+      }
+
+      console.log('Fetched bids:', bidData);
+
+      // Fetch usernames from the User table with corrected query
+      const enrichedBids = await Promise.all(
+        bidData.map(async (bid) => {
+          console.log('Fetching user for bid:', bid); // Debugging log
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('User') // Correctly reference the table name
+              .select('Fname, Lname') // Remove double quotes for column names
+              .eq('User_Id', bid.bidder_id) // Remove double quotes for column name
+              .single();
+
+            console.log('Supabase query executed for bidder_id:', bid.bidder_id); // Debugging log
+            if (userError) {
+              console.error(`Error fetching user for bidder_id ${bid.bidder_id}:`, userError);
+              return { ...bid, user: { display_name: 'Unknown' } };
+            }
+
+            console.log('Fetched user data:', userData); // Debugging log
+            const displayName = userData.Fname || userData.Lname ? `${userData.Fname || ''} ${userData.Lname || ''}`.trim() : 'Anonymous';
+            console.log(`Constructed display name for bidder_id ${bid.bidder_id}: ${displayName}`); // Debugging log
+            return { ...bid, user: { display_name: displayName } };
+          } catch (err) {
+            console.error(`Error fetching user for bidder_id ${bid.bidder_id}:`, err);
+            return { ...bid, user: { display_name: 'Unknown' } };
+          }
+        })
+      );
+
+      console.log('Final enriched bids:', enrichedBids); // Debugging log
+      setBids(enrichedBids || []);
+    } catch (err) {
+      console.error('[ArtModal] Error in fetchBids:', err);
+    }
+  };
+
+  // Remove duplicate fetchBids definition and use the global one in useEffect
+  useEffect(() => {
+    if (isOpen && (art?.auction_id || art?.id)) {
+      fetchBids();
+    }
+  }, [isOpen, art?.auction_id, art?.id]);
+
+  // Determine the highest bid from bids array or current_highest_bid
+  const topBids = bids || [];
+  const highestBid = topBids.length > 0
+    ? Math.max(...topBids.map(b => b.amount))
+    : (
+        (art && typeof art.current_highest_bid === 'number' ? art.current_highest_bid : 0) ||
+        (art && typeof art.starting_price === 'number' ? art.starting_price : 0)
+      );
 
   // Handle bid button click
   const handleBidClick = () => {
@@ -126,7 +178,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
   // Submit bid logic
   const handleBid = async () => {
     const bidAmountNum = parseFloat(bidAmount);
-    const currentHighestBid = art.current_highest_bid || art.starting_price || 0;
+    const currentHighestBid = highestBid;
 
     // Validate bid amount
     if (isNaN(bidAmountNum) || bidAmountNum <= 0) {
@@ -164,7 +216,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
 
       // Place the bid
       const { data: bidData, error: bidError } = await supabase
-        .from('trendingbids')
+        .from('bids')
         .insert([
           {
             auction_id: auctionId,
@@ -197,7 +249,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
       // Update local state
       const newBid = {
         ...bidData[0],
-        user: { email: user.email }
+        user: { raw_user_meta_data: user.user_metadata }
       };
 
       const updatedBids = [newBid, ...bids]
@@ -216,74 +268,18 @@ const ArtModal = ({ isOpen, onClose, art }) => {
     }
   };
 
-  // Update fetchBids function
-  const fetchBids = async () => {
-    try {
-      const auctionId = art.auction_id;
-      
-      if (!auctionId) {
-        console.error('No auction ID found');
-        return;
-      }
-
-      console.log('Fetching bids for auction:', auctionId);
-
-      const { data: auctionData, error: auctionError } = await supabase
-        .from('auctions')
-        .select('*')
-        .eq('auction_id', auctionId)
-        .single();
-
-      if (auctionError) {
-        console.error('Error fetching auction:', auctionError);
-        return;
-      }
-
-      // Check if auction has ended
-      const now = new Date();
-      const end = new Date(auctionData.end_time);
-      if (now >= end && auctionData.status !== 'ended') {
-        await supabase
-          .from('auctions')
-          .update({ status: 'ended' })
-          .eq('auction_id', auctionId);
-      }
-
-      const { data: bidData, error: bidError } = await supabase
-        .from('trendingbids')
-        .select(`
-          *,
-          user:bidder_id (
-            id,
-            email
-          )
-        `)
-        .eq('auction_id', auctionId)
-        .order('amount', { ascending: false })
-        .limit(3);
-
-      if (bidError) {
-        console.error('Error fetching bids:', bidError);
-        return;
-      }
-
-      setBids(bidData || []);
-    } catch (err) {
-      console.error('Error in fetchBids:', err);
-    }
-  };
-
-  // Update useEffect to use the new fetchBids function
+  // Reset bids when modal closes
   useEffect(() => {
-    if (isOpen && art) {
-      fetchBids();
+    if (!isOpen) {
+      console.log('[ArtModal] Modal closed, resetting bids');
+      setBids([]);
     }
-  }, [art?.id, isOpen]);
+  }, [isOpen]);
 
   if (!isOpen || !art) return null;
 
   // Get the artwork image URL from either the auction or artwork object
-  const imageUrl = art.artworks?.image_url || art.image_url || '/Images/placeholder-art.jpg';
+  const imageUrl = art.artwork?.image_url || art.image_url || '/Images/placeholder-art.jpg';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -297,27 +293,27 @@ const ArtModal = ({ isOpen, onClose, art }) => {
         </button>
 
         {/* Title */}
-        <h2 className="text-2xl font-serif mb-4">{art.artworks?.title || art.title}</h2>
+        <h2 className="text-2xl font-serif mb-4">{art.artwork?.title || art.title}</h2>
 
         {/* Image */}
         <div className="mb-4">
           <img
             src={imageUrl}
-            alt={art.artworks?.title || art.title}
+            alt={art.artwork?.title || art.title}
             className="w-full h-64 object-contain bg-gray-100 rounded"
           />
         </div>
 
         {/* Description */}
-        <p className="text-gray-700 mb-4">{art.artworks?.description || art.description}</p>
+        <p className="text-gray-700 mb-4">{art.artwork?.description || art.description}</p>
 
         {/* Current Price and Minimum Bid */}
         <div className="mb-4">
           <p className="text-sm text-gray-600">
-            Current Price: <span className="font-semibold">${art.current_highest_bid || art.starting_price}</span>
+            Current Price: <span className="font-semibold">${highestBid}</span>
           </p>
           <p className="text-sm text-gray-600">
-            Minimum Bid: <span className="font-semibold">${(art.current_highest_bid || art.starting_price) + 1}</span>
+            Minimum Bid: <span className="font-semibold">${highestBid + 1}</span>
           </p>
         </div>
 
@@ -335,12 +331,12 @@ const ArtModal = ({ isOpen, onClose, art }) => {
           <div className="flex-1">
             <input
               type="number"
-              placeholder={`Min bid: $${(art.current_highest_bid || art.starting_price) + 1}`}
+              placeholder={`Min bid: $${highestBid + 1}`}
               value={bidAmount}
               onChange={(e) => setBidAmount(e.target.value)}
               className="border px-2 py-1 w-full text-sm rounded"
               disabled={timeLeft.expired}
-              min={(art.current_highest_bid || art.starting_price) + 1}
+              min={highestBid + 1}
             />
           </div>
           <button
@@ -366,7 +362,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
               {bids.map((b, i) => (
                 <li key={i} className="flex items-center justify-between">
                   <span>
-                    ${b.amount} by {b.user?.email || 'Anonymous'}
+                    ${b.amount} by {b.user?.display_name || 'Anonymous'}
                   </span>
                   {i === 0 && <span className="text-yellow-500 font-bold ml-2">★ Highest</span>}
                 </li>

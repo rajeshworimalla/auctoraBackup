@@ -7,7 +7,29 @@ import ArtModal from '../components/ArtModal';
 import GalleryModal from '../components/GalleryModal';
 
 const ExplorePage = () => {
-  const [activeTab, setActiveTab] = useState('auctions');
+  // Test Supabase connection
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        console.log('Testing Supabase connection...');
+        const { data, error } = await supabase
+          .from('Artwork')
+          .select('count');
+        
+        if (error) {
+          console.error('Supabase connection error:', error);
+        } else {
+          console.log('Supabase connection successful, count:', data);
+        }
+      } catch (err) {
+        console.error('Failed to connect to Supabase:', err);
+      }
+    };
+
+    testConnection();
+  }, []);
+
+  const [activeTab, setActiveTab] = useState('gallery');
   const [artworks, setArtworks] = useState([]);
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,148 +46,161 @@ const ExplorePage = () => {
     sortBy: 'newest'
   });
 
-  // Fetch both artworks and auctions
+  // Fetch data when component mounts or tab changes
   useEffect(() => {
-    fetchArtworks();
-    fetchAuctions();
-  }, []);
+    console.log('Tab changed to:', activeTab);
+    if (activeTab === 'gallery') {
+      fetchArtworks();
+    } else {
+      fetchAuctions();
+    }
+  }, [activeTab]);
 
   const fetchArtworks = async () => {
     try {
+      console.log('Starting to fetch artworks...');
+      setLoading(true);
+
+      // First, get all artwork_ids that are in auctions
+      const { data: auctionArtworks, error: auctionError } = await supabase
+        .from('auctions')
+        .select('artwork_id');
+
+      if (auctionError) {
+        console.error('Error fetching auction artworks:', auctionError);
+        throw auctionError;
+      }
+
+      console.log('Auction artworks:', auctionArtworks);
+
+      // Create array of artwork_ids that are in auctions
+      const auctionArtworkIds = auctionArtworks?.map(a => a.artwork_id) || [];
+      console.log('Auction artwork IDs:', auctionArtworkIds);
+
+      // Build query for artworks
       let query = supabase
-        .from('artworks')
+        .from('Artwork')
         .select('*')
         .eq('is_sold', false);
 
-      // Apply search filter
-      if (filters.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,artist_name.ilike.%${filters.search}%`);
-      }
-
-      // Apply category filter
-      if (filters.category) {
-        query = query.eq('category', filters.category.toLowerCase());
-      }
-
-      // Apply medium filter
-      if (filters.medium) {
-        query = query.eq('medium', filters.medium);
-      }
-
-      // Apply price range filters
-      if (filters.minPrice) {
-        query = query.gte('price', parseFloat(filters.minPrice));
-      }
-      if (filters.maxPrice) {
-        query = query.lte('price', parseFloat(filters.maxPrice));
-      }
-
-      // Apply sorting
-      switch (filters.sortBy) {
-        case 'newest':
-          query = query.order('created_at', { ascending: false });
-          break;
-        case 'oldest':
-          query = query.order('created_at', { ascending: true });
-          break;
-        case 'price_high':
-          query = query.order('price', { ascending: false });
-          break;
-        case 'price_low':
-          query = query.order('price', { ascending: true });
-          break;
-        default:
-          query = query.order('created_at', { ascending: false });
+      if (auctionArtworkIds.length > 0) {
+        query = query.not('artwork_id', 'in', `(${auctionArtworkIds.join(',')})`);
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
-      setArtworks(data || []);
-      setLoading(false);
+      if (error) {
+        console.error('Error fetching artworks:', error);
+        throw error;
+      }
+
+      console.log('Raw gallery artworks:', data);
+
+      if (!data || data.length === 0) {
+        console.log('No gallery artworks found');
+        setArtworks([]);
+        return;
+      }
+
+      const transformedArtworks = data.map(artwork => ({
+        ...artwork,
+        title: artwork.title || 'Untitled',
+        description: artwork.description || 'No description available',
+        image_url: artwork.image_url || '/Images/placeholder-art.jpg',
+        price: artwork.price || 0,
+        category: artwork.category || 'Other',
+        medium: artwork.medium || 'Mixed Media'
+      }));
+
+      console.log('Transformed gallery artworks:', transformedArtworks);
+      setArtworks(transformedArtworks);
     } catch (error) {
-      console.error('Error fetching artworks:', error);
+      console.error('Error in fetchArtworks:', error);
+      setArtworks([]);
+    } finally {
       setLoading(false);
     }
   };
 
   const fetchAuctions = async () => {
     try {
-      console.log('Fetching auctions...');
-      const { data, error } = await supabase
+      setLoading(true);
+
+      // Fetch all live auctions with artwork details
+      const { data: auctionsData, error: auctionsError } = await supabase
         .from('auctions')
         .select(`
           *,
-          artworks (*)
+          Artwork (*)
         `)
-        .order('end_time', { ascending: true });
+        .eq('status', 'active');
 
-      if (error) {
-        console.error('Error fetching auctions:', error);
-        throw error;
+      if (auctionsError) throw auctionsError;
+
+      // Fetch top 3 bids and total bid count for all auctions
+      const auctionIds = auctionsData.map(a => a.auction_id);
+      let bidCounts = {};
+      let topBids = {};
+      if (auctionIds.length > 0) {
+        // Get total bid counts
+        const { data: countData, error: countError } = await supabase
+          .from('bids')
+          .select('auction_id, count:bids(*)')
+          .in('auction_id', auctionIds);
+        if (!countError && countData) {
+          countData.forEach(b => {
+            bidCounts[b.auction_id] = b.count;
+          });
+        }
+        // Get top 3 bids for each auction
+        for (const auctionId of auctionIds) {
+          const { data: bidsData, error: bidsError } = await supabase
+            .from('bids')
+            .select(`*, user:bidder_id (id, raw_user_meta_data)`)
+            .eq('auction_id', auctionId)
+            .order('amount', { ascending: false })
+            .limit(3);
+          if (!bidsError && bidsData) {
+            topBids[auctionId] = bidsData;
+          } else {
+            topBids[auctionId] = [];
+          }
+        }
       }
 
-      console.log('Raw auction data:', data);
-
-      // Transform the data to include auction_id
-      const transformedAuctions = data.map(auction => {
-        const transformed = {
-          ...auction,
-          id: auction.auction_id,
+      // Transform auction data
+      const transformedAuctions = auctionsData.map(auction => {
+        const artwork = auction.Artwork || {};
+        return {
           auction_id: auction.auction_id,
-          title: auction.artworks?.title || 'Untitled',
-          description: auction.artworks?.description || '',
-          image_url: auction.artworks?.image_url || '',
-          current_highest_bid: auction.current_highest_bid || auction.starting_price,
+          artwork_id: auction.artwork_id,
           starting_price: auction.starting_price || 0,
+          current_highest_bid: auction.current_highest_bid || auction.starting_price,
           end_time: auction.end_time,
-          status: auction.status || 'active',
-          artworks: auction.artworks || null,
-          total_bids: 0
+          start_time: auction.start_time,
+          status: auction.status,
+          reserve_price: auction.reserve_price,
+          total_bids: bidCounts[auction.auction_id] || 0,
+          top_bids: topBids[auction.auction_id] || [],
+          artwork: {
+            ...artwork,
+            title: artwork.title || 'Untitled',
+            description: artwork.description || 'No description available',
+            image_url: artwork.image_url || '/Images/placeholder-art.jpg',
+            category: artwork.category || 'Other',
+            medium: artwork.medium || 'Mixed Media',
+            artist_name: artwork.artist_name
+          }
         };
-        console.log('Transformed auction:', transformed);
-        return transformed;
       });
 
-      console.log('All transformed auctions:', transformedAuctions);
-
-      // Fetch bid counts for each auction
-      const bidPromises = transformedAuctions.map(async (auction) => {
-        if (!auction.auction_id) {
-          console.error('Missing auction_id for auction:', auction);
-          return auction;
-        }
-
-        const { count, error: countError } = await supabase
-          .from('trendingbids')
-          .select('*', { count: 'exact' })
-          .eq('auction_id', auction.auction_id);
-        
-        if (countError) {
-          console.error('Error fetching bid count:', countError);
-        } else {
-          auction.total_bids = count || 0;
-        }
-        return auction;
-      });
-
-      const auctionsWithBids = await Promise.all(bidPromises);
-      console.log('Final auctions with bids:', auctionsWithBids);
-      
-      setAuctions(auctionsWithBids);
-      setLoading(false);
+      setAuctions(transformedAuctions);
     } catch (error) {
-      console.error('Error in fetchAuctions:', error);
+      setAuctions([]);
+    } finally {
       setLoading(false);
     }
   };
-
-  // Add useEffect to refetch when filters change
-  useEffect(() => {
-    if (activeTab === 'gallery') {
-      fetchArtworks();
-    }
-  }, [filters, activeTab]);
 
   const handleItemClick = (item) => {
     setSelectedItem(item);
@@ -427,6 +462,7 @@ const ExplorePage = () => {
       {/* Modals */}
       {selectedItem && activeTab === 'auctions' ? (
         <ArtModal
+          key={(selectedItem?.auction_id || selectedItem?.id || '') + '-' + (selectedItem ? Date.now() : '')}
           isOpen={selectedItem !== null}
           onClose={() => setSelectedItem(null)}
           art={selectedItem}

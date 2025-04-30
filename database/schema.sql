@@ -224,4 +224,83 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER update_auction_highest_bid
     AFTER INSERT ON trendingbids
     FOR EACH ROW
-    EXECUTE FUNCTION update_highest_bid(); 
+    EXECUTE FUNCTION update_highest_bid();
+
+-- Step 1: Ensure User_Id matches auth.users.id
+ALTER TABLE "User"
+ALTER COLUMN "User_Id" TYPE uuid USING "User_Id"::uuid;
+
+-- Step 2: Populate the User table with data from auth.users
+INSERT INTO "User" ("User_Id", "Fname", "Lname", "Email", "Created_At")
+SELECT id, metadata->>'first_name', metadata->>'last_name', email, created_at
+FROM auth.users
+ON CONFLICT ("User_Id") DO NOTHING;
+
+-- Step 3: Create a trigger to sync new users
+CREATE OR REPLACE FUNCTION sync_new_users()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO "User" ("User_Id", "Fname", "Lname", "Email", "Created_At")
+  VALUES (NEW.id, NEW.metadata->>'first_name', NEW.metadata->>'last_name', NEW.email, NEW.created_at)
+  ON CONFLICT ("User_Id") DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER after_user_insert
+AFTER INSERT ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION sync_new_users();
+
+-- Step 4: Add a foreign key constraint to connect User and bids
+ALTER TABLE bids
+ADD CONSTRAINT fk_bidder_user
+FOREIGN KEY (bidder_id)
+REFERENCES "User" ("User_Id")
+ON DELETE CASCADE;
+
+-- Step 1: Remove the Password column
+ALTER TABLE "User"
+DROP COLUMN "Password";
+
+-- Step 2: Create a trigger to sync new users from auth.users
+CREATE OR REPLACE FUNCTION sync_new_users()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO "User" ("User_Id", "Fname", "Lname", "Email", "Created_At")
+  VALUES (NEW.id, NEW.raw_user_meta_data->>'first_name', NEW.raw_user_meta_data->>'last_name', NEW.email, NEW.created_at)
+  ON CONFLICT ("User_Id") DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER after_user_insert
+AFTER INSERT ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION sync_new_users();
+
+-- Step 1: Drop NOT NULL constraints for all problematic columns
+ALTER TABLE "User"
+ALTER COLUMN "Fname" DROP NOT NULL,
+ALTER COLUMN "Lname" DROP NOT NULL,
+ALTER COLUMN "Phone" DROP NOT NULL,
+ALTER COLUMN "Is_Seller" DROP NOT NULL;
+
+-- Step 2: Set default values for columns (if required)
+ALTER TABLE "User"
+ALTER COLUMN "Fname" SET DEFAULT 'Unknown',
+ALTER COLUMN "Lname" SET DEFAULT 'Unknown',
+ALTER COLUMN "Phone" SET DEFAULT 'Unknown',
+ALTER COLUMN "Is_Seller" SET DEFAULT false;
+
+-- Step 3: Update the query to handle missing data
+INSERT INTO "User" ("User_Id", "Fname", "Lname", "Email", "Phone", "Is_Seller", "Created_At")
+SELECT id, 
+       COALESCE(raw_user_meta_data->>'first_name', 'Unknown'), 
+       COALESCE(raw_user_meta_data->>'last_name', 'Unknown'), 
+       email, 
+       COALESCE(phone, 'Unknown'), 
+       false, 
+       created_at
+FROM auth.users
+ON CONFLICT ("User_Id") DO NOTHING;
