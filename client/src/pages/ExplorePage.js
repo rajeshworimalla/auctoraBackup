@@ -10,7 +10,7 @@ import UploadArtworkModal from '../components/UploadArtworkModal';
 const ExplorePage = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('gallery');
+  const [activeTab, setActiveTab] = useState('auction');
   const [artworks, setArtworks] = useState([]);
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +26,17 @@ const ExplorePage = () => {
     artist: '',
     sortBy: 'newest'
   });
+  const [user, setUser] = useState(null);
 
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+  
+    getUser();
+  }, []);
+  
   // Test Supabase connection
   useEffect(() => {
     const testConnection = async () => {
@@ -505,12 +515,15 @@ const ExplorePage = () => {
               )}
             </button>
 
-            <button
-              onClick={() => setShowUpload(true)}
-              className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
-            >
-              Upload Your Artwork
-            </button>
+            {user && (
+  <button
+    onClick={() => setShowUpload(true)}
+    className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
+  >
+    Upload Your Artwork
+  </button>
+)}
+
           </div>
         </div>
 

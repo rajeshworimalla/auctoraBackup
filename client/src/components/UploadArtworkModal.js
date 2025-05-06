@@ -28,7 +28,10 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
   const handleFileUpload = async () => {
     if (!file) return null;
     const filename = `${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage.from('images').upload(filename, file);
+    const { data, error } = await supabase.storage
+  .from('images')
+  .upload(`public/${filename}`, file);
+
     if (error) {
       alert('Upload failed');
       return null;
