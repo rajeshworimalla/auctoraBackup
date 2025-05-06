@@ -61,69 +61,46 @@ const ExplorePage = () => {
 
   const fetchArtworks = async () => {
     try {
-      console.log('Starting to fetch artworks...');
+      console.log('Fetching gallery artworks...');
       setLoading(true);
-
-      // First, get all artwork_ids that are in auctions
-      const { data: auctionArtworks, error: auctionError } = await supabase
-        .from('auctions')
-        .select('artwork_id');
-
-      if (auctionError) {
-        console.error('Error fetching auction artworks:', auctionError);
-        throw auctionError;
-      }
-
-      console.log('Auction artworks:', auctionArtworks);
-
-      // Create array of artwork_ids that are in auctions
-      const auctionArtworkIds = auctionArtworks?.map(a => a.artwork_id) || [];
-      console.log('Auction artwork IDs:', auctionArtworkIds);
-
-      // Build query for artworks
-      let query = supabase
-        .from('Artwork')
-        .select('*')
-        .eq('is_sold', false);
-
-      if (auctionArtworkIds.length > 0) {
-        query = query.not('artwork_id', 'in', `(${auctionArtworkIds.join(',')})`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching artworks:', error);
-        throw error;
-      }
-
-      console.log('Raw gallery artworks:', data);
-
-      if (!data || data.length === 0) {
-        console.log('No gallery artworks found');
-        setArtworks([]);
-        return;
-      }
-
-      const transformedArtworks = data.map(artwork => ({
-        ...artwork,
-        title: artwork.title || 'Untitled',
-        description: artwork.description || 'No description available',
-        image_url: artwork.image_url || '/Images/placeholder-art.jpg',
-        price: artwork.price || 0,
-        category: artwork.category || 'Other',
-        medium: artwork.medium || 'Mixed Media'
+  
+      const { data, error } = await supabase
+        .from('gallery')
+        .select(`
+          *,
+          Artwork:artwork_id (
+            *,
+            artist_name
+          )
+        `)
+        .order('display_order', { ascending: true });
+  
+      if (error) throw error;
+  
+      const transformed = data.map(item => ({
+        ...item.Artwork,
+        gallery_id: item.gallery_id,
+        featured: item.featured,
+        display_order: item.display_order,
+        title: item.Artwork.title || 'Untitled',
+        description: item.Artwork.description || 'No description available',
+        image_url: item.Artwork.image_url || '/Images/placeholder-art.jpg',
+        price: item.Artwork.price || 0,
+        category: item.Artwork.category || 'Other',
+        medium: item.Artwork.medium || 'Mixed Media'
       }));
-
-      console.log('Transformed gallery artworks:', transformedArtworks);
-      setArtworks(transformedArtworks);
-    } catch (error) {
-      console.error('Error in fetchArtworks:', error);
+  
+      setArtworks(transformed);
+    } catch (err) {
+      console.error('Gallery fetch error:', err);
       setArtworks([]);
     } finally {
       setLoading(false);
     }
   };
+
+  
+  
 
   const fetchAuctions = async () => {
     try {
@@ -380,32 +357,38 @@ const ExplorePage = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <h1 className="text-4xl font-serif font-bold text-gray-900 mb-4 md:mb-0">
-            Explore Artworks
-          </h1>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
-          >
-            {showFilters ? (
-              <>
-                <FiX className="w-5 h-5 mr-2" />
-                Close Filters
-              </>
-            ) : (
-              <>
-                <FiFilter className="w-5 h-5 mr-2" />
-                Show Filters
-              </>
-            )}
-          </button>
+  <h1 className="text-4xl font-serif font-bold text-gray-900 mb-4 md:mb-0">
+    Explore Artworks
+  </h1>
 
-          <button
-  onClick={() => setShowUpload(true)}
-  className="ml-4 px-4 py-2 bg-[#8B7355] text-white rounded-lg hover:bg-[#6B563D] transition-all"
->
-  Upload Your Artwork
-</button>
+  {/* Buttons container */}
+  <div className="flex gap-4">
+    <button
+      onClick={() => setShowFilters(!showFilters)}
+      className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
+    >
+      {showFilters ? (
+        <>
+          <FiX className="w-5 h-5 mr-2" />
+          Close Filters
+        </>
+      ) : (
+        <>
+          <FiFilter className="w-5 h-5 mr-2" />
+          Show Filters
+        </>
+      )}
+    </button>
+
+    <button
+      onClick={() => setShowUpload(true)}
+      className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
+    >
+      Upload Your Artwork
+    </button>
+  </div>
+</div>
+
 
 <UploadArtworkModal isOpen={showUpload} onClose={() => setShowUpload(false)} />
 
