@@ -5,8 +5,11 @@ import ArtworkCard from '../components/ArtworkCard';
 import AuctionCard from '../components/AuctionCard';
 import ArtModal from '../components/ArtModal';
 import GalleryModal from '../components/GalleryModal';
+import UploadArtworkModal from '../components/UploadArtworkModal';
 
 const ExplorePage = () => {
+  const [showUpload, setShowUpload] = useState(false);
+
   // Test Supabase connection
   useEffect(() => {
     const testConnection = async () => {
@@ -396,6 +399,16 @@ const ExplorePage = () => {
               </>
             )}
           </button>
+
+          <button
+  onClick={() => setShowUpload(true)}
+  className="ml-4 px-4 py-2 bg-[#8B7355] text-white rounded-lg hover:bg-[#6B563D] transition-all"
+>
+  Upload Your Artwork
+</button>
+
+<UploadArtworkModal isOpen={showUpload} onClose={() => setShowUpload(false)} />
+
         </div>
 
         {/* Tab Switcher */}
