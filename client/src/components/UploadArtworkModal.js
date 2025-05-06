@@ -110,8 +110,8 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Upload Your Artwork</h2>
+<div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+<h2 className="text-xl font-bold mb-4">Upload Your Artwork</h2>
 
         <label className="block mb-2 text-sm font-medium">Title</label>
         <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full mb-3 border p-2 rounded" />
