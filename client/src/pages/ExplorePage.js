@@ -9,29 +9,7 @@ import UploadArtworkModal from '../components/UploadArtworkModal';
 
 const ExplorePage = () => {
   const [showUpload, setShowUpload] = useState(false);
-
-  // Test Supabase connection
-  useEffect(() => {
-    const testConnection = async () => {
-      try {
-        console.log('Testing Supabase connection...');
-        const { data, error } = await supabase
-          .from('Artwork')
-          .select('count');
-        
-        if (error) {
-          console.error('Supabase connection error:', error);
-        } else {
-          console.log('Supabase connection successful, count:', data);
-        }
-      } catch (err) {
-        console.error('Failed to connect to Supabase:', err);
-      }
-    };
-
-    testConnection();
-  }, []);
-
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('gallery');
   const [artworks, setArtworks] = useState([]);
   const [auctions, setAuctions] = useState([]);
@@ -49,9 +27,27 @@ const ExplorePage = () => {
     sortBy: 'newest'
   });
 
+  // Test Supabase connection
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('Artwork')
+          .select('count');
+        
+        if (error) throw error;
+        console.log('Supabase connection successful');
+      } catch (err) {
+        console.error('Failed to connect to Supabase:', err);
+        setError('Failed to connect to database. Please try again later.');
+      }
+    };
+
+    testConnection();
+  }, []);
+
   // Fetch data when component mounts or tab changes
   useEffect(() => {
-    console.log('Tab changed to:', activeTab);
     if (activeTab === 'gallery') {
       fetchArtworks();
     } else {
@@ -61,10 +57,10 @@ const ExplorePage = () => {
 
   const fetchArtworks = async () => {
     try {
-      console.log('Fetching gallery artworks...');
       setLoading(true);
+      setError(null);
   
-      const { data, error } = await supabase
+      let query = supabase
         .from('gallery')
         .select(`
           *,
@@ -72,8 +68,44 @@ const ExplorePage = () => {
             *,
             artist_name
           )
-        `)
-        .order('display_order', { ascending: true });
+        `);
+
+      // Apply filters
+      if (filters.search) {
+        query = query.ilike('Artwork.title', `%${filters.search}%`);
+      }
+      if (filters.category) {
+        query = query.eq('Artwork.category', filters.category);
+      }
+      if (filters.medium) {
+        query = query.eq('Artwork.medium', filters.medium);
+      }
+      if (filters.minPrice) {
+        query = query.gte('Artwork.price', filters.minPrice);
+      }
+      if (filters.maxPrice) {
+        query = query.lte('Artwork.price', filters.maxPrice);
+      }
+
+      // Apply sorting
+      switch (filters.sortBy) {
+        case 'newest':
+          query = query.order('created_at', { ascending: false });
+          break;
+        case 'oldest':
+          query = query.order('created_at', { ascending: true });
+          break;
+        case 'price_high':
+          query = query.order('Artwork.price', { ascending: false });
+          break;
+        case 'price_low':
+          query = query.order('Artwork.price', { ascending: true });
+          break;
+        default:
+          query = query.order('display_order', { ascending: true });
+      }
+
+      const { data, error } = await query;
   
       if (error) throw error;
   
@@ -93,21 +125,19 @@ const ExplorePage = () => {
       setArtworks(transformed);
     } catch (err) {
       console.error('Gallery fetch error:', err);
+      setError('Failed to fetch artworks. Please try again later.');
       setArtworks([]);
     } finally {
       setLoading(false);
     }
   };
 
-  
-  
-
   const fetchAuctions = async () => {
     try {
       setLoading(true);
+      setError(null);
 
-      // Fetch all live auctions with artwork details
-      const { data: auctionsData, error: auctionsError } = await supabase
+      let query = supabase
         .from('auctions')
         .select(`
           *,
@@ -115,42 +145,74 @@ const ExplorePage = () => {
         `)
         .eq('status', 'active');
 
+      // Apply filters
+      if (filters.search) {
+        query = query.ilike('Artwork.title', `%${filters.search}%`);
+      }
+      if (filters.category) {
+        query = query.eq('Artwork.category', filters.category);
+      }
+      if (filters.medium) {
+        query = query.eq('Artwork.medium', filters.medium);
+      }
+      if (filters.minPrice) {
+        query = query.gte('starting_price', filters.minPrice);
+      }
+      if (filters.maxPrice) {
+        query = query.lte('starting_price', filters.maxPrice);
+      }
+
+      // Apply sorting
+      switch (filters.sortBy) {
+        case 'ending_soon':
+          query = query.order('end_time', { ascending: true });
+          break;
+        case 'most_bids':
+          // This would require a subquery or additional processing
+          break;
+        default:
+          query = query.order('created_at', { ascending: false });
+      }
+
+      const { data: auctionsData, error: auctionsError } = await query;
+
       if (auctionsError) throw auctionsError;
 
-      // Fetch top 3 bids and total bid count for all auctions
+      // Fetch bid information
       const auctionIds = auctionsData.map(a => a.auction_id);
-      let bidCounts = {};
-      let topBids = {};
-      if (auctionIds.length > 0) {
-        // Get total bid counts
-        const { data: countData, error: countError } = await supabase
-          .from('bids')
-          .select('auction_id, count:bids(*)')
-          .in('auction_id', auctionIds);
-        if (!countError && countData) {
-          countData.forEach(b => {
-            bidCounts[b.auction_id] = b.count;
-          });
-        }
-        // Get top 3 bids for each auction
-        for (const auctionId of auctionIds) {
-          const { data: bidsData, error: bidsError } = await supabase
+      const bidPromises = auctionIds.map(async (auctionId) => {
+        const [countResult, topBidsResult] = await Promise.all([
+          supabase
+            .from('bids')
+            .select('count')
+            .eq('auction_id', auctionId)
+            .single(),
+          supabase
             .from('bids')
             .select(`*, user:bidder_id (id, raw_user_meta_data)`)
             .eq('auction_id', auctionId)
             .order('amount', { ascending: false })
-            .limit(3);
-          if (!bidsError && bidsData) {
-            topBids[auctionId] = bidsData;
-          } else {
-            topBids[auctionId] = [];
-          }
-        }
-      }
+            .limit(3)
+        ]);
+
+        return {
+          auctionId,
+          count: countResult.data?.count || 0,
+          topBids: topBidsResult.data || []
+        };
+      });
+
+      const bidResults = await Promise.all(bidPromises);
+      const bidMap = bidResults.reduce((acc, { auctionId, count, topBids }) => {
+        acc[auctionId] = { count, topBids };
+        return acc;
+      }, {});
 
       // Transform auction data
       const transformedAuctions = auctionsData.map(auction => {
         const artwork = auction.Artwork || {};
+        const bidInfo = bidMap[auction.auction_id] || { count: 0, topBids: [] };
+        
         return {
           auction_id: auction.auction_id,
           artwork_id: auction.artwork_id,
@@ -160,8 +222,8 @@ const ExplorePage = () => {
           start_time: auction.start_time,
           status: auction.status,
           reserve_price: auction.reserve_price,
-          total_bids: bidCounts[auction.auction_id] || 0,
-          top_bids: topBids[auction.auction_id] || [],
+          total_bids: bidInfo.count,
+          top_bids: bidInfo.topBids,
           artwork: {
             ...artwork,
             title: artwork.title || 'Untitled',
@@ -176,6 +238,8 @@ const ExplorePage = () => {
 
       setAuctions(transformedAuctions);
     } catch (error) {
+      console.error('Auction fetch error:', error);
+      setError('Failed to fetch auctions. Please try again later.');
       setAuctions([]);
     } finally {
       setLoading(false);
@@ -186,155 +250,186 @@ const ExplorePage = () => {
     setSelectedItem(item);
   };
 
-  // Update the Apply Filters button click handler
   const handleApplyFilters = () => {
     setShowFilters(false);
-    fetchArtworks();
+    if (activeTab === 'gallery') {
+      fetchArtworks();
+    } else {
+      fetchAuctions();
+    }
+  };
+
+  const handleResetFilters = () => {
+    setFilters({
+      search: '',
+      category: '',
+      medium: '',
+      minPrice: '',
+      maxPrice: '',
+      artist: '',
+      sortBy: 'newest'
+    });
   };
 
   // Filter section component
   const FilterSection = () => (
-    <div className={`transition-all duration-300 ease-in-out overflow-hidden ${showFilters ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-      <div className="bg-white shadow-lg rounded-xl p-6 mb-6 border border-gray-100">
-        {/* Filter Tabs */}
-        <div className="flex space-x-4 mb-6 border-b border-gray-200">
-          <button
-            className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 ${
-              activeFilterTab === 'basic'
-                ? 'border-[#8B7355] text-[#8B7355]'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveFilterTab('basic')}
-          >
-            Basic Filters
-          </button>
-          <button
-            className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 ${
-              activeFilterTab === 'advanced'
-                ? 'border-[#8B7355] text-[#8B7355]'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveFilterTab('advanced')}
-          >
-            Advanced Filters
-          </button>
-          <button
-            className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 ${
-              activeFilterTab === 'sort'
-                ? 'border-[#8B7355] text-[#8B7355]'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => setActiveFilterTab('sort')}
-          >
-            Sort & Order
-          </button>
-        </div>
-
-        {/* Basic Filters */}
-        <div className={`space-y-4 transition-all duration-300 ${activeFilterTab === 'basic' ? 'block' : 'hidden'}`}>
-          {/* Search Input */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search artworks..."
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Category Filter */}
-            <div className="relative">
-              <select
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
-                value={filters.category}
-                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              >
-                <option value="">All Categories</option>
-                <option value="painting">Painting</option>
-                <option value="sculpture">Sculpture</option>
-                <option value="digital">Digital Art</option>
-                <option value="photography">Photography</option>
-              </select>
-              <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            </div>
-
-            {/* Medium Filter */}
-            <div className="relative">
-              <select
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
-                value={filters.medium}
-                onChange={(e) => setFilters({ ...filters, medium: e.target.value })}
-              >
-                <option value="">All Mediums</option>
-                <option value="oil">Oil</option>
-                <option value="acrylic">Acrylic</option>
-                <option value="watercolor">Watercolor</option>
-                <option value="digital">Digital</option>
-                <option value="mixed">Mixed Media</option>
-              </select>
-              <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            </div>
-          </div>
-        </div>
-
-        {/* Advanced Filters */}
-        <div className={`space-y-4 transition-all duration-300 ${activeFilterTab === 'advanced' ? 'block' : 'hidden'}`}>
-          {/* Price Range */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="relative">
-              <input
-                type="number"
-                placeholder="Min Price"
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
-                value={filters.minPrice}
-                onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-              />
-            </div>
-            <div className="relative">
-              <input
-                type="number"
-                placeholder="Max Price"
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
-                value={filters.maxPrice}
-                onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Sort Options */}
-        <div className={`space-y-4 transition-all duration-300 ${activeFilterTab === 'sort' ? 'block' : 'hidden'}`}>
-          <div className="relative">
-            <select
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
-              value={filters.sortBy}
-              onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
+    <div className={`fixed md:relative inset-0 z-50 md:z-auto bg-white md:bg-transparent transition-all duration-300 ease-in-out ${
+      showFilters ? 'opacity-100 visible' : 'opacity-0 invisible md:visible md:opacity-100'
+    }`}>
+      <div className="h-full md:h-auto overflow-y-auto md:overflow-visible">
+        <div className="bg-white shadow-lg rounded-xl p-6 mb-6 border border-gray-100 max-w-4xl mx-auto md:mx-0">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">Filters</h3>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="md:hidden p-2 hover:bg-gray-100 rounded-full"
             >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="price_high">Price: High to Low</option>
-              <option value="price_low">Price: Low to High</option>
-              {activeTab === 'auctions' && (
-                <>
-                  <option value="ending_soon">Ending Soon</option>
-                  <option value="most_bids">Most Bids</option>
-                </>
-              )}
-            </select>
-            <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <FiX className="w-6 h-6" />
+            </button>
           </div>
-        </div>
 
-        {/* Apply Filters Button */}
-        <div className="flex justify-end mt-6 pt-4 border-t border-gray-100">
-          <button
-            onClick={handleApplyFilters}
-            className="px-6 py-2 bg-[#8B7355] text-white rounded-lg hover:bg-[#6B563D] transition-all duration-200"
-          >
-            Apply Filters
-          </button>
+          {/* Filter Tabs */}
+          <div className="flex space-x-4 mb-6 border-b border-gray-200 overflow-x-auto">
+            <button
+              className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
+                activeFilterTab === 'basic'
+                  ? 'border-[#8B7355] text-[#8B7355]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveFilterTab('basic')}
+            >
+              Basic Filters
+            </button>
+            <button
+              className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
+                activeFilterTab === 'advanced'
+                  ? 'border-[#8B7355] text-[#8B7355]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveFilterTab('advanced')}
+            >
+              Advanced Filters
+            </button>
+            <button
+              className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
+                activeFilterTab === 'sort'
+                  ? 'border-[#8B7355] text-[#8B7355]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveFilterTab('sort')}
+            >
+              Sort & Order
+            </button>
+          </div>
+
+          {/* Basic Filters */}
+          <div className={`space-y-4 transition-all duration-300 ${activeFilterTab === 'basic' ? 'block' : 'hidden'}`}>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search artworks..."
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="relative">
+                <select
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
+                  value={filters.category}
+                  onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                >
+                  <option value="">All Categories</option>
+                  <option value="painting">Painting</option>
+                  <option value="sculpture">Sculpture</option>
+                  <option value="digital">Digital Art</option>
+                  <option value="photography">Photography</option>
+                </select>
+                <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+
+              <div className="relative">
+                <select
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
+                  value={filters.medium}
+                  onChange={(e) => setFilters({ ...filters, medium: e.target.value })}
+                >
+                  <option value="">All Mediums</option>
+                  <option value="oil">Oil</option>
+                  <option value="acrylic">Acrylic</option>
+                  <option value="watercolor">Watercolor</option>
+                  <option value="digital">Digital</option>
+                  <option value="mixed">Mixed Media</option>
+                </select>
+                <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
+          </div>
+
+          {/* Advanced Filters */}
+          <div className={`space-y-4 transition-all duration-300 ${activeFilterTab === 'advanced' ? 'block' : 'hidden'}`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="relative">
+                <input
+                  type="number"
+                  placeholder="Min Price"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
+                  value={filters.minPrice}
+                  onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+                />
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  placeholder="Max Price"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
+                  value={filters.maxPrice}
+                  onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Sort Options */}
+          <div className={`space-y-4 transition-all duration-300 ${activeFilterTab === 'sort' ? 'block' : 'hidden'}`}>
+            <div className="relative">
+              <select
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
+                value={filters.sortBy}
+                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="price_high">Price: High to Low</option>
+                <option value="price_low">Price: Low to High</option>
+                {activeTab === 'auctions' && (
+                  <>
+                    <option value="ending_soon">Ending Soon</option>
+                    <option value="most_bids">Most Bids</option>
+                  </>
+                )}
+              </select>
+              <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            </div>
+          </div>
+
+          {/* Filter Actions */}
+          <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
+            <button
+              onClick={handleResetFilters}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-all duration-200"
+            >
+              Reset Filters
+            </button>
+            <button
+              onClick={handleApplyFilters}
+              className="px-6 py-2 bg-[#8B7355] text-white rounded-lg hover:bg-[#6B563D] transition-all duration-200"
+            >
+              Apply Filters
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -345,7 +440,26 @@ const ExplorePage = () => {
       <div className="min-h-screen bg-[#F5F5F5] p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D3CABE]"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B7355]"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F5] p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+            <p className="font-medium">Error</p>
+            <p>{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 text-sm text-red-600 hover:text-red-800"
+            >
+              Try again
+            </button>
           </div>
         </div>
       </div>
@@ -357,42 +471,39 @@ const ExplorePage = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-  <h1 className="text-4xl font-serif font-bold text-gray-900 mb-4 md:mb-0">
-    Explore Artworks
-  </h1>
+          <h1 className="text-4xl font-serif font-bold text-gray-900 mb-4 md:mb-0">
+            Explore Artworks
+          </h1>
 
-  {/* Buttons container */}
-  <div className="flex gap-4">
-    <button
-      onClick={() => setShowFilters(!showFilters)}
-      className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
-    >
-      {showFilters ? (
-        <>
-          <FiX className="w-5 h-5 mr-2" />
-          Close Filters
-        </>
-      ) : (
-        <>
-          <FiFilter className="w-5 h-5 mr-2" />
-          Show Filters
-        </>
-      )}
-    </button>
+          {/* Buttons container */}
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
+            >
+              {showFilters ? (
+                <>
+                  <FiX className="w-5 h-5 mr-2" />
+                  Close Filters
+                </>
+              ) : (
+                <>
+                  <FiFilter className="w-5 h-5 mr-2" />
+                  Show Filters
+                </>
+              )}
+            </button>
 
-    <button
-      onClick={() => setShowUpload(true)}
-      className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
-    >
-      Upload Your Artwork
-    </button>
-  </div>
-</div>
-
-
-<UploadArtworkModal isOpen={showUpload} onClose={() => setShowUpload(false)} />
-
+            <button
+              onClick={() => setShowUpload(true)}
+              className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
+            >
+              Upload Your Artwork
+            </button>
+          </div>
         </div>
+
+        <UploadArtworkModal isOpen={showUpload} onClose={() => setShowUpload(false)} />
 
         {/* Tab Switcher */}
         <div className="flex space-x-4 mb-6">
@@ -453,23 +564,25 @@ const ExplorePage = () => {
             )
           )}
         </div>
-      </div>
 
-      {/* Modals */}
-      {selectedItem && activeTab === 'auctions' ? (
-        <ArtModal
-          key={(selectedItem?.auction_id || selectedItem?.id || '') + '-' + (selectedItem ? Date.now() : '')}
-          isOpen={selectedItem !== null}
-          onClose={() => setSelectedItem(null)}
-          art={selectedItem}
-        />
-      ) : (
-        <GalleryModal
-          isOpen={selectedItem !== null}
-          onClose={() => setSelectedItem(null)}
-          artwork={selectedItem}
-        />
-      )}
+        {/* Modals */}
+        {selectedItem && (
+          activeTab === 'auctions' ? (
+            <ArtModal
+              key={(selectedItem?.auction_id || selectedItem?.id || '') + '-' + Date.now()}
+              isOpen={true}
+              onClose={() => setSelectedItem(null)}
+              art={selectedItem}
+            />
+          ) : (
+            <GalleryModal
+              isOpen={true}
+              onClose={() => setSelectedItem(null)}
+              artwork={selectedItem}
+            />
+          )
+        )}
+      </div>
     </div>
   );
 };
