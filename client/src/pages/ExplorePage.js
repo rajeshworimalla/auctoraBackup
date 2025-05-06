@@ -274,10 +274,11 @@ const ExplorePage = () => {
   // Filter section component
   const FilterSection = () => (
     <div
-    className={`transition-all duration-300 ease-in-out ${
-      showFilters ? 'block' : 'hidden'
-    } md:block`}
-  >
+  className={`transition-all duration-300 ease-in-out ${
+    showFilters ? 'block' : 'hidden'
+  }`}
+>
+
   
       {/* Overlay for mobile to close filter panel when clicking outside */}
       {showFilters && (

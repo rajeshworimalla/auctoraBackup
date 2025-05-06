@@ -2,47 +2,33 @@ import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Dialog } from '@headlessui/react';
 
-const categories = [
-  'painting',
-  'sculpture',
-  'digital',
-  'photography',
-  'other',
-];
-const mediums = [
-  'oil',
-  'acrylic',
-  'watercolor',
-  'digital',
-  'bronze',
-  'mixed',
-  'other',
-];
+const categories = ['painting', 'sculpture', 'digital', 'photography', 'other'];
+const mediums = ['oil', 'acrylic', 'watercolor', 'digital', 'bronze', 'mixed', 'other'];
 
 const UploadArtworkModal = ({ isOpen, onClose }) => {
-  const [mode, setMode] = useState('gallery'); // gallery or auction
+  const [mode, setMode] = useState('gallery');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [file, setFile] = useState(null);
-  const [uploadMode, setUploadMode] = useState('url'); // url or file
+  const [uploadMode, setUploadMode] = useState('url');
   const [artistName, setArtistName] = useState('');
   const [category, setCategory] = useState('painting');
   const [medium, setMedium] = useState('oil');
   const [dimensions, setDimensions] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
+
   // Auction fields
   const [startingBid, setStartingBid] = useState('');
   const [reservePrice, setReservePrice] = useState('');
-  const [auctionDuration, setAuctionDuration] = useState(7); // days
+  const [auctionDuration, setAuctionDuration] = useState(7);
+  const [startDate, setStartDate] = useState('');
 
   const handleFileUpload = async () => {
     if (!file) return null;
     const filename = `${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage
-      .from('artworks')
-      .upload(filename, file);
+    const { data, error } = await supabase.storage.from('artworks').upload(filename, file);
     if (error) {
       alert('Upload failed');
       return null;
@@ -55,50 +41,56 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
     const user = await supabase.auth.getUser();
     const owner_id = user.data.user?.id || null;
     let finalImageUrl = imageUrl;
+
     if (uploadMode === 'file') {
       const uploadedUrl = await handleFileUpload();
       if (!uploadedUrl) return;
       finalImageUrl = uploadedUrl;
     }
-    // Insert into Artwork
-    const { data: artworkData, error: artworkError } = await supabase.from('Artwork').insert([
-      {
-        title,
-        description,
-        price: parseFloat(price),
-        image_url: finalImageUrl,
-        category,
-        medium,
-        dimensions,
-        year: parseInt(year),
-        artist_name: artistName,
-        is_sold: false,
-        owner_id,
-      },
-    ]).select();
+
+    const { data: artworkData, error: artworkError } = await supabase
+      .from('Artwork')
+      .insert([
+        {
+          title,
+          description,
+          price: parseFloat(price),
+          image_url: finalImageUrl,
+          category,
+          medium,
+          dimensions,
+          year: parseInt(year),
+          artist_name: artistName,
+          is_sold: false,
+          owner_id,
+        },
+      ])
+      .select();
+
     if (artworkError || !artworkData || !artworkData[0]) {
       alert('Insert failed');
       return;
     }
+
     const artwork_id = artworkData[0].artwork_id;
+
     if (mode === 'gallery') {
-      // Insert into gallery
       await supabase.from('gallery').insert([
         { artwork_id, featured: false, display_order: 1 },
       ]);
       alert('Uploaded successfully to gallery');
       onClose();
     } else if (mode === 'auction') {
-      // Insert into auctions
-      const now = new Date();
-      const end = new Date(now.getTime() + auctionDuration * 24 * 60 * 60 * 1000);
+      const start_time = startDate ? new Date(startDate) : new Date();
+      const end_time = new Date(start_time.getTime() + auctionDuration * 24 * 60 * 60 * 1000);
+
       await supabase.from('auctions').insert([
         {
           artwork_id,
           starting_price: parseFloat(startingBid),
           current_highest_bid: parseFloat(startingBid),
-          start_time: now.toISOString(),
-          end_time: end.toISOString(),
+          start_time: start_time.toISOString(),
+          end_time: end_time.toISOString(),
           status: 'active',
           reserve_price: parseFloat(reservePrice),
         },
@@ -110,8 +102,8 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="fixed inset-0 flex items-center justify-center z-50">
-<div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-<h2 className="text-xl font-bold mb-4">Upload Your Artwork</h2>
+      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-bold mb-4">Upload Your Artwork</h2>
 
         <label className="block mb-2 text-sm font-medium">Title</label>
         <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full mb-3 border p-2 rounded" />
@@ -139,8 +131,10 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
 
         <div className="mb-3 flex gap-2">
           <div className="flex-1">
-            <label className="block mb-2 text-sm font-medium">Dimensions</label>
-            <input value={dimensions} onChange={e => setDimensions(e.target.value)} className="w-full border p-2 rounded" />
+            <label className="block mb-2 text-sm font-medium">
+              Dimensions <span className="text-xs text-gray-500">(e.g. 12 x 12 inches)</span>
+            </label>
+            <input placeholder="Width x Height (inches)" value={dimensions} onChange={e => setDimensions(e.target.value)} className="w-full border p-2 rounded" />
           </div>
           <div className="flex-1">
             <label className="block mb-2 text-sm font-medium">Year</label>
@@ -180,7 +174,9 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
             <label className="block mb-2 text-sm font-medium">Reserve Price ($)</label>
             <input type="number" value={reservePrice} onChange={e => setReservePrice(e.target.value)} className="w-full mb-2 border p-2 rounded" />
             <label className="block mb-2 text-sm font-medium">Auction Duration (days)</label>
-            <input type="number" value={auctionDuration} min={1} max={30} onChange={e => setAuctionDuration(e.target.value)} className="w-full border p-2 rounded" />
+            <input type="number" value={auctionDuration} min={1} max={30} onChange={e => setAuctionDuration(e.target.value)} className="w-full mb-2 border p-2 rounded" />
+            <label className="block mb-2 text-sm font-medium">Start Date (optional)</label>
+            <input type="datetime-local" onChange={(e) => setStartDate(e.target.value)} className="w-full border p-2 rounded" />
           </div>
         )}
 
