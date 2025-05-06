@@ -274,11 +274,11 @@ const ExplorePage = () => {
   // Filter section component
   const FilterSection = () => (
     <div
-      className={`fixed md:relative inset-0 z-50 md:z-auto bg-white md:bg-transparent transition-all duration-300 ease-in-out ${
-        showFilters ? 'opacity-100 visible' : 'opacity-0 invisible md:visible md:opacity-100'
-      }`}
-      style={{ pointerEvents: showFilters ? 'auto' : 'none' }}
-    >
+    className={`transition-all duration-300 ease-in-out ${
+      showFilters ? 'block' : 'hidden'
+    } md:block`}
+  >
+  
       {/* Overlay for mobile to close filter panel when clicking outside */}
       {showFilters && (
         <div
