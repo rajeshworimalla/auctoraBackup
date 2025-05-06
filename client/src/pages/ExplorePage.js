@@ -273,10 +273,20 @@ const ExplorePage = () => {
 
   // Filter section component
   const FilterSection = () => (
-    <div className={`fixed md:relative inset-0 z-50 md:z-auto bg-white md:bg-transparent transition-all duration-300 ease-in-out ${
-      showFilters ? 'opacity-100 visible' : 'opacity-0 invisible md:visible md:opacity-100'
-    }`}>
-      <div className="h-full md:h-auto overflow-y-auto md:overflow-visible">
+    <div
+      className={`fixed md:relative inset-0 z-50 md:z-auto bg-white md:bg-transparent transition-all duration-300 ease-in-out ${
+        showFilters ? 'opacity-100 visible' : 'opacity-0 invisible md:visible md:opacity-100'
+      }`}
+      style={{ pointerEvents: showFilters ? 'auto' : 'none' }}
+    >
+      {/* Overlay for mobile to close filter panel when clicking outside */}
+      {showFilters && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-10 md:hidden z-40"
+          onClick={() => setShowFilters(false)}
+        />
+      )}
+      <div className="h-full md:h-auto overflow-y-auto md:overflow-visible relative z-50">
         <div className="bg-white shadow-lg rounded-xl p-6 mb-6 border border-gray-100 max-w-4xl mx-auto md:mx-0">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-semibold text-gray-900">Filters</h3>
