@@ -168,7 +168,8 @@ const Login = () => {
     }
 
     try {
-      console.log('Starting signup process with data:', {
+      console.log('=== STARTING SIGNUP PROCESS ===');
+      console.log('Form data:', {
         email: formData.email,
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -177,9 +178,10 @@ const Login = () => {
 
       // Get the current URL origin
       const siteUrl = window.location.origin;
-      console.log('Attempting to create auth user...');
+      console.log('Site URL:', siteUrl);
 
       // Sign up the user with Supabase Auth
+      console.log('Attempting to create auth user...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -194,14 +196,16 @@ const Login = () => {
         }
       });
 
-      console.log('Auth signup response:', { authData, authError });
+      console.log('=== AUTH RESPONSE ===');
+      console.log('Auth data:', authData);
+      console.log('Auth error:', authError);
 
       if (authError) {
-        console.error('Auth error details:', {
-          message: authError.message,
-          status: authError.status,
-          name: authError.name
-        });
+        console.error('=== AUTH ERROR DETAILS ===');
+        console.error('Message:', authError.message);
+        console.error('Status:', authError.status);
+        console.error('Name:', authError.name);
+        
         if (authError.message.includes('already registered')) {
           setError('An account with this email already exists. Please sign in instead.');
         } else {
@@ -211,21 +215,26 @@ const Login = () => {
       }
 
       if (!authData?.user?.id) {
-        console.error('No user ID returned from auth signup');
+        console.error('=== NO USER ID ERROR ===');
+        console.error('Auth data:', authData);
         setError('Failed to create user account. Please try again.');
         return;
       }
 
-      console.log('Auth user created successfully:', authData);
+      console.log('=== AUTH USER CREATED ===');
+      console.log('User ID:', authData.user.id);
+      console.log('User metadata:', authData.user.user_metadata);
 
       // Check if user already exists
       if (authData?.user?.identities?.length === 0) {
+        console.log('=== USER ALREADY EXISTS ===');
         setError('An account with this email already exists. Please sign in instead.');
         setIsSignUp(false);
         return;
       }
 
       // If we get here, it's a successful new signup
+      console.log('=== SIGNUP SUCCESSFUL ===');
       alert('Please check your email for a verification link. You must verify your email before you can sign in.');
       setIsSignUp(false);
       setFormData({
@@ -237,10 +246,9 @@ const Login = () => {
       });
       setPasswordStrength({ score: 0, message: '' });
     } catch (error) {
-      console.error('Unexpected signup error:', {
-        message: error.message,
-        stack: error.stack
-      });
+      console.error('=== UNEXPECTED ERROR ===');
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
       setError(`Unable to create account: ${error.message}`);
     } finally {
       setLoading(false);
@@ -249,13 +257,21 @@ const Login = () => {
 
   // Add this new function to handle email verification
   useEffect(() => {
+    console.log('Setting up auth state change listener...');
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('=== AUTH STATE CHANGE ===');
+      console.log('Event:', event);
+      console.log('Session:', session);
+
       if (event === 'SIGNED_IN') {
+        console.log('User signed in, checking email verification...');
         // Check if this is a new user who just verified their email
         if (session?.user?.email_confirmed_at) {
+          console.log('Email confirmed, creating user record...');
           try {
             // Create the user record in public.users
-            const { error: userError } = await supabase
+            const { data: insertData, error: userError } = await supabase
               .from('users')
               .insert({
                 User_Id: session.user.id,
@@ -266,7 +282,12 @@ const Login = () => {
                 Username: session.user.user_metadata.username,
                 Created_At: new Date().toISOString(),
                 Updated_At: new Date().toISOString()
-              });
+              })
+              .select();
+
+            console.log('=== USER RECORD CREATION ===');
+            console.log('Insert data:', insertData);
+            console.log('User error:', userError);
 
             if (userError) {
               console.error('Error creating user record:', userError);
@@ -279,6 +300,7 @@ const Login = () => {
     });
 
     return () => {
+      console.log('Cleaning up auth state change listener...');
       if (subscription) subscription.unsubscribe();
     };
   }, []);
