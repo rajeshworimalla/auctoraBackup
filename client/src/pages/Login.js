@@ -261,7 +261,7 @@ const Login = () => {
   ]);
 
 
-      if (insertError) {
+      if (userError) {
         console.error('User creation error details:', {
           message: insertError.message,
           details: insertError.details,
