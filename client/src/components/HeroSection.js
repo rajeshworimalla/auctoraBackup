@@ -146,7 +146,10 @@ const HeroSection = () => {
                 <strong>Gallery:</strong> Prefer instant buys? Browse and purchase directly from our handpicked collections.
               </p>
               <p className="text-base font-light font-serif">
-                <strong>Community:</strong> Connect with fellow art enthusiasts and share your passion for creativity.
+                <strong>Notifications:</strong> Stay updated with real-time alerts. Get notified when auctions are ending, new artworks are added, or bidding activity increases.
+              </p>
+              <p className="text-base font-light font-serif">
+                <strong>Selling Art:</strong> Artists can easily list their work. Upload images, set a price, choose between auction or gallery format, and connect with buyers directly.
               </p>
             </div>
           </div>
@@ -164,7 +167,7 @@ const HeroSection = () => {
             </p>
             <Link
               to="/explore"
-              className="inline-block border-2 border-[#8B7355] px-6 py-3 text-base text-white bg-[#8B7355] hover:bg-[#6B563D] hover:scale-105 hover:shadow-lg hover:shadow-[#8B7355] transition-all duration-300 font-serif"
+              className="inline-block border-2 border-[#8B7355] px-6 py-3 text-lg text-white bg-[#8B7355] hover:bg-[#6B563D] hover:scale-105 hover:shadow-lg hover:shadow-[#8B7355] transition-all duration-300 font-serif text-center"
             >
               Explore Now
             </Link>
