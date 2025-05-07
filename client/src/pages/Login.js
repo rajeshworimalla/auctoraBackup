@@ -173,8 +173,8 @@ const Login = () => {
       // First, check if user already exists
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
-        .select('id')
-        .eq('email', formData.email)
+        .select('User_Id')
+        .eq('Email', formData.email)
         .single();
 
       if (checkError && !checkError.message.includes('No rows found')) {
@@ -232,30 +232,30 @@ const Login = () => {
 
       console.log('Attempting to create user record in database...');
 
-      // Create user in users table
-      const { error: userError } = await supabase
+      // Create user in users table with correct column names
+      const { error: insertError } = await supabase
         .from('users')
         .insert([
           {
-            id: authData.user.id,
-            email: formData.email,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            phone: formData.phone,
-            username: `${formData.firstName} ${formData.lastName}`,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            User_Id: authData.user.id,
+            Email: formData.email,
+            Fname: formData.firstName,
+            Lname: formData.lastName,
+            Phone: formData.phone,
+            Username: `${formData.firstName} ${formData.lastName}`,
+            Created_At: new Date().toISOString(),
+            Updated_At: new Date().toISOString()
           }
         ]);
 
-      if (userError) {
+      if (insertError) {
         console.error('User creation error details:', {
-          message: userError.message,
-          details: userError.details,
-          hint: userError.hint,
-          code: userError.code
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+          code: insertError.code
         });
-        setError(`Unable to create user account: ${userError.message}`);
+        setError(`Unable to create user account: ${insertError.message}`);
         return;
       }
 
