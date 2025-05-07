@@ -341,7 +341,7 @@ const HeroSection = () => {
               </div>
               <Link
                 to="/about"
-                className="inline-block border-2 border-[#8B7355] px-6 py-3 text-lg text-white bg-[#8B7355] hover:bg-[#6B563D] hover:scale-105 hover:shadow-lg hover:shadow-[#8B7355] transition-all duration-300 font-serif text-center"
+                className="inline-block border-2 border-[#8B7355] px-4 py-2 text-sm text-white bg-[#8B7355] hover:bg-[#6B563D] hover:scale-105 hover:shadow-lg hover:shadow-[#8B7355] transition-all duration-300 font-serif text-center"
               >
                 Meet Our Team
               </Link>
