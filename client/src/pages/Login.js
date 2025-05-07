@@ -12,8 +12,7 @@ const Login = () => {
     lastName: '',
     email: '',
     phone: '',
-    password: '',
-    role: 'buyer'
+    password: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -105,10 +104,13 @@ const Login = () => {
     }
     
     if (name === 'phone') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: formatPhoneNumber(value)
-      }));
+      const formattedNumber = formatPhoneNumber(value);
+      if (formattedNumber.length <= 14) { // (XXX) XXX-XXXX = 14 chars
+        setFormData(prev => ({
+          ...prev,
+          [name]: formattedNumber
+        }));
+      }
       return;
     }
 
@@ -172,7 +174,6 @@ const Login = () => {
           first_name: formData.firstName,
           last_name: formData.lastName,
           phone: formData.phone,
-          role: formData.role,
           username: `${formData.firstName} ${formData.lastName}`,
         }
       });
@@ -190,7 +191,6 @@ const Login = () => {
             first_name: formData.firstName,
             last_name: formData.lastName,
             phone: formData.phone,
-            role: formData.role,
             username: `${formData.firstName} ${formData.lastName}`,
           },
           emailRedirectTo: `${siteUrl}/login`
@@ -218,8 +218,7 @@ const Login = () => {
         lastName: '',
         email: '',
         phone: '',
-        password: '',
-        role: 'buyer'
+        password: ''
       });
       setPasswordStrength({ score: 0, message: '' });
     } catch (error) {
@@ -287,7 +286,7 @@ const Login = () => {
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={isForgotPassword ? handleForgotPassword : (isSignUp ? handleSignUp : handleLogin)}>
+        <form onSubmit={isSignUp ? handleSignUp : (isForgotPassword ? handleForgotPassword : handleLogin)} className="mt-8 space-y-6">
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md animate-slideIn">
               <div className="flex">
@@ -303,88 +302,58 @@ const Login = () => {
             </div>
           )}
 
-          <div className={`space-y-4 transition-all duration-300 ease-in-out ${isSignUp ? 'animate-expandIn' : 'animate-expandOut h-0 overflow-hidden'}`}>
-            {isSignUp && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                      First Name
-                    </label>
-                    <input
-                      id="firstName"
-                      name="firstName"
-                      type="text"
-                      required
-                      className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#D3CABE] focus:border-[#D3CABE] focus:z-10 transition-all duration-300 ease-in-out hover:border-[#D3CABE]"
-                      placeholder="First Name"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Name
-                    </label>
-                    <input
-                      id="lastName"
-                      name="lastName"
-                      type="text"
-                      required
-                      className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#D3CABE] focus:border-[#D3CABE] focus:z-10 transition-all duration-300 ease-in-out hover:border-[#D3CABE]"
-                      placeholder="Last Name"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-
+          {isSignUp && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name
                   </label>
                   <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
+                    id="firstName"
+                    name="firstName"
+                    type="text"
                     required
                     className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#D3CABE] focus:border-[#D3CABE] focus:z-10 transition-all duration-300 ease-in-out hover:border-[#D3CABE]"
-                    placeholder="(XXX) XXX-XXXX"
-                    value={formData.phone}
+                    placeholder="First Name"
+                    value={formData.firstName}
                     onChange={handleInputChange}
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">Role</label>
-                  <div className="flex space-x-4">
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="role"
-                        value="buyer"
-                        checked={formData.role === 'buyer'}
-                        onChange={handleInputChange}
-                        className="form-radio h-4 w-4 text-[#D3CABE] focus:ring-[#D3CABE] border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Buyer</span>
-                    </label>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="role"
-                        value="seller"
-                        checked={formData.role === 'seller'}
-                        onChange={handleInputChange}
-                        className="form-radio h-4 w-4 text-[#D3CABE] focus:ring-[#D3CABE] border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Seller</span>
-                    </label>
-                  </div>
+                <div>
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    required
+                    className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#D3CABE] focus:border-[#D3CABE] focus:z-10 transition-all duration-300 ease-in-out hover:border-[#D3CABE]"
+                    placeholder="Last Name"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                  />
                 </div>
-              </>
-            )}
-          </div>
+              </div>
+
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#D3CABE] focus:border-[#D3CABE] focus:z-10 transition-all duration-300 ease-in-out hover:border-[#D3CABE]"
+                  placeholder="(XXX) XXX-XXXX"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </>
+          )}
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -419,7 +388,8 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleInputChange}
               />
-              {isSignUp && formData.password && (
+              
+              {isSignUp && (
                 <div className="mt-3 animate-fadeIn">
                   <div className="flex items-center space-x-2">
                     <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -444,7 +414,7 @@ const Login = () => {
             </div>
           )}
 
-          <div className="flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
             {!isSignUp && !isForgotPassword && (
               <button
                 type="button"
