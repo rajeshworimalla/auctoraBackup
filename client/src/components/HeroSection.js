@@ -123,32 +123,31 @@ const HeroSection = () => {
       {/* Hero Section */}
       <div className="flex flex-col md:flex-row min-h-screen">
        {/* Left Column: Sculpture + How It Works */}
-<div className="md:w-1/2 w-full flex flex-col h-screen">
-  {/* Top Half: Sculpture */}
-  <div className="h-1/2">
-    <img
-      src="/Images/Sculpture.png"
-      alt="Sculpture"
-      className="w-full h-full object-cover"
-    />
-  </div>
+        <div className="md:w-1/2 w-full flex flex-col h-screen">
+          {/* Full Height: Sculpture */}
+          <div className="h-full">
+            <img
+              src="/Images/Sculpture.png"
+              alt="Sculpture"
+              className="w-full h-full object-cover"
+            />
+          </div>
 
-  {/* Bottom Half: How It Works */}
-  <div className="h-1/2 bg-[#D3CABE] flex flex-col justify-center items-center px-6 md:px-12">
-    <div className="max-w-md space-y-4">
-      <span className="text-sm tracking-wider text-black/60 uppercase">Get Started</span>
-      <h2 className="text-4xl font-serif mb-2">How It Works</h2>
-      <div className="w-20 h-1 bg-black/20 mb-4"></div>
-      <p className="text-base font-light">
-        <strong>Auctions:</strong> Join live auctions, place your bids, and win unique pieces.
-      </p>
-      <p className="text-base font-light">
-        <strong>Gallery:</strong> Prefer instant buys? Browse and purchase directly from our handpicked collections.
-      </p>
-    </div>
-  </div>
-</div>
-
+          {/* How It Works */}
+          <div className="bg-[#D3CABE] flex flex-col justify-center items-center px-6 md:px-12 py-8">
+            <div className="max-w-md space-y-4">
+              <span className="text-sm tracking-wider text-black/60 uppercase">Get Started</span>
+              <h2 className="text-4xl font-serif mb-2">How It Works</h2>
+              <div className="w-20 h-1 bg-black/20 mb-4"></div>
+              <p className="text-base font-light font-serif">
+                <strong>Auctions:</strong> Join live auctions, place your bids, and win unique pieces.
+              </p>
+              <p className="text-base font-light font-serif">
+                <strong>Gallery:</strong> Prefer instant buys? Browse and purchase directly from our handpicked collections.
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Text + Button + Second Image */}
         <div className="md:w-1/2 w-full flex flex-col">
@@ -157,12 +156,12 @@ const HeroSection = () => {
             <h1 className="text-4xl md:text-6xl font-serif font-normal leading-tight mb-6 text-black">
               ARTISTRY IN<br />EVERY<br />AUCTION
             </h1>
-            <p className="text-sm md:text-base text-black font-light mb-10 max-w-md">
+            <p className="text-sm md:text-base text-black font-light mb-10 max-w-md font-serif">
               Indulge in a world of creativity and sophistication. Our art auctions offer a blend of tradition and innovation, curated for art enthusiasts.
             </p>
             <Link
               to="/explore"
-              className="inline-block border border-black px-4 py-2 text-sm text-black hover:bg-black hover:text-white hover:scale-105 hover:shadow-lg hover:shadow-[#8B7355] transition"
+              className="inline-block border-2 border-[#8B7355] px-6 py-3 text-sm text-[#8B7355] hover:bg-[#8B7355] hover:text-white hover:scale-105 hover:shadow-lg hover:shadow-[#8B7355] transition-all duration-300 font-serif"
             >
               Explore Now
             </Link>
