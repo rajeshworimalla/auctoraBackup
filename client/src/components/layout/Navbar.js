@@ -6,6 +6,8 @@ import { supabase } from '../../supabaseClient';
 
 const Navbar = ({ user }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [cartItemCount, setCartItemCount] = useState(0);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
 
@@ -21,6 +23,45 @@ const Navbar = ({ user }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Fetch notification count
+  useEffect(() => {
+    const fetchNotificationCount = async () => {
+      if (user) {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('count')
+          .eq('user_id', user.id)
+          .eq('read', false)
+          .single();
+        
+        if (!error && data) {
+          setNotificationCount(data.count);
+        }
+      }
+    };
+
+    fetchNotificationCount();
+  }, [user]);
+
+  // Fetch cart item count
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      if (user) {
+        const { data, error } = await supabase
+          .from('cart_items')
+          .select('count')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (!error && data) {
+          setCartItemCount(data.count);
+        }
+      }
+    };
+
+    fetchCartCount();
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
@@ -127,9 +168,19 @@ const Navbar = ({ user }) => {
             <>
               <Link to="/notifications" className="relative">
                 <FiBell size={22} />
+                {notificationCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {notificationCount}
+                  </span>
+                )}
               </Link>
               <Link to="/cart" className="relative">
                 <FiShoppingCart size={22} />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-[#8B7355] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {cartItemCount}
+                  </span>
+                )}
               </Link>
               {/* Profile Dropdown */}
               <div 
