@@ -232,21 +232,34 @@ const Login = () => {
 
       console.log('Attempting to create user record in database...');
 
+      console.log("Inserting user with values:", {
+        User_Id: authData.user.id,
+        Email: formData.email,
+        Fname: formData.firstName,
+        Lname: formData.lastName,
+        Phone: formData.phone,
+        Username: `${formData.firstName} ${formData.lastName}`,
+        Created_At: new Date().toISOString(),
+        Updated_At: new Date().toISOString()
+      });
+      
+
       // Create user in users table with correct column names
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert([
-          {
-            User_Id: authData.user.id,
-            Email: formData.email,
-            Fname: formData.firstName,
-            Lname: formData.lastName,
-            Phone: formData.phone,
-            Username: `${formData.firstName} ${formData.lastName}`,
-            Created_At: new Date().toISOString(),
-            Updated_At: new Date().toISOString()
-          }
-        ]);
+      const { error: userError } = await supabase
+  .from('users')
+  .insert([
+    {
+      User_Id: authData.user.id,
+      Email: formData.email,
+      Fname: formData.firstName,
+      Lname: formData.lastName,
+      Phone: formData.phone,
+      Username: `${formData.firstName} ${formData.lastName}`,
+      Created_At: new Date().toISOString(),
+      Updated_At: new Date().toISOString()
+    }
+  ]);
+
 
       if (insertError) {
         console.error('User creation error details:', {
