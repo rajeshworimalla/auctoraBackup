@@ -286,7 +286,7 @@ const HeroSection = () => {
         </div>
 
         {/* Section 2: Mission Statement (Image Left, Text Right) */}
-        <div className="flex flex-col lg:flex-row h-[90vh]">
+        <div id="purpose" className="flex flex-col lg:flex-row h-[90vh]">
           <div className="lg:w-1/2 w-full h-full">
             <img
               src="/Images/AboutUs3.jpg"
@@ -318,7 +318,7 @@ const HeroSection = () => {
         </div>
 
         {/* Section 3: Who We Are (Text Left, Custom Size Image Grid Right) */}
-        <div className="flex flex-col lg:flex-row h-[90vh]">
+        <div id="who-we-are" className="flex flex-col lg:flex-row h-[90vh]">
           {/* Text Column */}
           <div className="lg:w-1/2 w-full flex flex-col justify-center items-center p-8 lg:p-20 bg-[#D3CABE]">
             <div className="max-w-xl space-y-8">

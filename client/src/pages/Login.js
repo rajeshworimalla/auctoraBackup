@@ -200,7 +200,14 @@ const Login = () => {
       console.log('Signup response:', { authData, authError });
 
       if (authError) {
-        throw authError;
+        if (authError.message.includes('already registered')) {
+          setError('An account with this email already exists. Please sign in instead.');
+        } else if (authError.message.includes('database')) {
+          setError('Unable to create account. Please try again later.');
+        } else {
+          setError(authError.message);
+        }
+        return;
       }
 
       // Check if user already exists
@@ -223,7 +230,11 @@ const Login = () => {
       setPasswordStrength({ score: 0, message: '' });
     } catch (error) {
       console.error('Signup error:', error);
-      setError(error.message);
+      if (error.message.includes('database')) {
+        setError('Unable to create account. Please try again later.');
+      } else {
+        setError(error.message);
+      }
     } finally {
       setLoading(false);
     }

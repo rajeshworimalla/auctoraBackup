@@ -30,41 +30,50 @@ const TeamPage = () => {
   ];
 
   return (
-    <section className="min-h-screen bg-[#D3CABE] py-8 px-4 md:px-16 font-serif">
-      <div className="max-w-5xl mx-auto text-center mb-8">
-        <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4 text-black">Meet Our Team</h1>
-        <p className="text-base md:text-lg text-black/70 font-light max-w-2xl mx-auto">
-          The creative minds and passionate builders behind Auctora. We blend art, code, and a love for innovation to bring you a unique auction experience.
-        </p>
+    <section className="min-h-screen bg-[#D3CABE] py-16 px-4 md:px-8 font-serif relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}></div>
       </div>
-      
-      <div className="max-w-6xl mx-auto">
-        {/* First Row - 3 members */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto mb-4">
-          {teamMembers.slice(0, 3).map((member, idx) => (
-            <div key={idx} className="bg-white/80 rounded-lg shadow-md p-4 flex flex-col items-center border border-black/10 hover:shadow-lg transition-shadow duration-200 h-[250px]">
-              <img 
-                src={member.img}
-                alt={member.name} 
-                className="w-20 h-20 object-cover rounded-full border-2 border-[#8B7355] mb-3 shadow-sm"
-              />
-              <h3 className="text-lg font-semibold text-black mb-2">{member.name}</h3>
-              <p className="text-sm text-gray-600 text-center italic">{member.bio}</p>
-            </div>
-          ))}
+
+      <div className="max-w-6xl mx-auto relative">
+        {/* Header Section */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-black tracking-tight">
+            Meet Our Team
+          </h1>
+          <div className="w-24 h-1 bg-[#8B7355] mx-auto mb-6"></div>
+          <p className="text-lg md:text-xl text-black/70 font-light max-w-2xl mx-auto leading-relaxed">
+            The creative minds and passionate builders behind Auctora. We blend art, code, and a love for innovation to bring you a unique auction experience.
+          </p>
         </div>
 
-        {/* Second Row - 2 members */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-          {teamMembers.slice(3, 5).map((member, idx) => (
-            <div key={idx} className="bg-white/80 rounded-lg shadow-md p-4 flex flex-col items-center border border-black/10 hover:shadow-lg transition-shadow duration-200 h-[250px]">
-              <img 
-                src={member.img}
-                alt={member.name} 
-                className="w-20 h-20 object-cover rounded-full border-2 border-[#8B7355] mb-3 shadow-sm"
-              />
-              <h3 className="text-lg font-semibold text-black mb-2">{member.name}</h3>
-              <p className="text-sm text-gray-600 text-center italic">{member.bio}</p>
+        {/* Team Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {teamMembers.map((member, idx) => (
+            <div 
+              key={idx} 
+              className="group bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-6 flex flex-col items-center transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-black/5"
+            >
+              <div className="relative mb-6">
+                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[#8B7355] shadow-lg transform transition-transform duration-300 group-hover:scale-105">
+                  <img 
+                    src={member.img}
+                    alt={member.name} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-[#8B7355] text-white px-4 py-1 rounded-full text-sm font-medium shadow-md">
+                  Team Member
+                </div>
+              </div>
+              
+              <h3 className="text-xl font-semibold text-black mb-3 text-center">{member.name}</h3>
+              <p className="text-gray-600 text-center italic leading-relaxed group-hover:text-black transition-colors duration-300">
+                {member.bio}
+              </p>
             </div>
           ))}
         </div>

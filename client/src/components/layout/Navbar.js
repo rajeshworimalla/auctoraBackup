@@ -35,11 +35,21 @@ const Navbar = ({ user }) => {
   const handleAboutClick = (e) => {
     e.preventDefault();
     navigate('/');
-    // Wait for navigation to complete before scrolling
     setTimeout(() => {
       const aboutSection = document.getElementById('about');
       if (aboutSection) {
         aboutSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  const handlePurposeClick = (e) => {
+    e.preventDefault();
+    navigate('/');
+    setTimeout(() => {
+      const purposeSection = document.getElementById('purpose');
+      if (purposeSection) {
+        purposeSection.scrollIntoView({ behavior: 'smooth' });
       }
     }, 100);
   };
@@ -51,6 +61,17 @@ const Navbar = ({ user }) => {
       const howItWorksSection = document.getElementById('how-it-works');
       if (howItWorksSection) {
         howItWorksSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  const handleWhoWeAreClick = (e) => {
+    e.preventDefault();
+    navigate('/');
+    setTimeout(() => {
+      const whoWeAreSection = document.getElementById('who-we-are');
+      if (whoWeAreSection) {
+        whoWeAreSection.scrollIntoView({ behavior: 'smooth' });
       }
     }, 100);
   };
@@ -88,9 +109,10 @@ const Navbar = ({ user }) => {
         {/* Center: Nav Links (only when logged out) */}
         {!user && (
           <div className="absolute left-1/2 transform -translate-x-1/2 flex space-x-8 text-base font-medium">
-            <Link to="/" className="hover:underline">Home</Link>
             <a href="#" onClick={handleAboutClick} className="hover:underline">About Us</a>
+            <a href="#" onClick={handlePurposeClick} className="hover:underline">Our Purpose</a>
             <a href="#" onClick={handleHowItWorksClick} className="hover:underline">How It Works</a>
+            <a href="#" onClick={handleWhoWeAreClick} className="hover:underline">Who We Are</a>
             <a href="#" onClick={handleContactClick} className="hover:underline">Contact Us</a>
           </div>
         )}
