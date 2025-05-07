@@ -197,7 +197,12 @@ const ArtModal = ({ isOpen, onClose, art }) => {
       setLoading(true);
       const bidAmount = parseFloat(bidAmount);
       
-      if (isNaN(bidAmount) || bidAmount <= highestBid) {
+      // Add validation for negative values and zero
+      if (isNaN(bidAmount) || bidAmount <= 0) {
+        throw new Error('Bid amount must be greater than zero');
+      }
+      
+      if (bidAmount <= highestBid) {
         throw new Error('Bid must be higher than the current highest bid');
       }
 
@@ -349,7 +354,13 @@ const ArtModal = ({ isOpen, onClose, art }) => {
               <input
                 type="number"
                 value={bidAmount}
-                onChange={(e) => setBidAmount(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Only allow positive numbers
+                  if (value === '' || (parseFloat(value) > 0)) {
+                    setBidAmount(value);
+                  }
+                }}
                 placeholder={`Minimum bid: $${highestBid + 1}`}
                 className="flex-1 p-2 border rounded"
                 min={highestBid + 1}

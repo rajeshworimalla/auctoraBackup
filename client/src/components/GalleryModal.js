@@ -43,18 +43,45 @@ const GalleryModal = ({ isOpen, onClose, artwork }) => {
 
     try {
       setLoading(true);
-      const { error } = await supabase
-        .from('cart')
-        .insert([
-          {
-            user_id: user.id,
-            artwork_id: artwork.artwork_id,
-            quantity: quantity
-          }
-        ]);
+      
+      // Check if item is already in cart
+      const { data: existingItem, error: checkError } = await supabase
+        .from('cart_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('artwork_id', artwork.artwork_id)
+        .single();
 
-      if (error) throw error;
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        throw checkError;
+      }
+
+      if (existingItem) {
+        // Update quantity if item exists
+        const { error: updateError } = await supabase
+          .from('cart_items')
+          .update({ quantity: existingItem.quantity + quantity })
+          .eq('id', existingItem.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Insert new item if it doesn't exist
+        const { error: insertError } = await supabase
+          .from('cart_items')
+          .insert([
+            {
+              user_id: user.id,
+              artwork_id: artwork.artwork_id,
+              quantity: quantity,
+              price: artwork.price
+            }
+          ]);
+
+        if (insertError) throw insertError;
+      }
+
       alert('Added to cart successfully!');
+      onClose();
     } catch (error) {
       console.error('Error adding to cart:', error);
       alert('Failed to add to cart. Please try again.');

@@ -62,6 +62,22 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
         throw new Error('Please fill in all required fields');
       }
 
+      // Validate auction fields if mode is auction
+      if (mode === 'auction') {
+        if (!startingBid || parseFloat(startingBid) <= 0) {
+          throw new Error('Starting bid must be greater than zero');
+        }
+        if (!reservePrice || parseFloat(reservePrice) <= 0) {
+          throw new Error('Reserve price must be greater than zero');
+        }
+        if (parseFloat(startingBid) > parseFloat(reservePrice)) {
+          throw new Error('Starting bid cannot be higher than reserve price');
+        }
+        if (!auctionDuration || auctionDuration < 1 || auctionDuration > 30) {
+          throw new Error('Auction duration must be between 1 and 30 days');
+        }
+      }
+
       const user = await supabase.auth.getUser();
       const owner_id = user.data.user?.id;
       
@@ -128,6 +144,11 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
           }]);
 
         if (auctionError) {
+          // If auction creation fails, delete the artwork
+          await supabase
+            .from('Artwork')
+            .delete()
+            .eq('artwork_id', artwork_id);
           throw new Error('Failed to create auction');
         }
 
@@ -245,13 +266,42 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
         {mode === 'auction' && (
           <div className="mb-4 border rounded p-3 bg-gray-50">
             <label className="block mb-2 text-sm font-medium">Starting Bid ($)</label>
-            <input type="number" value={startingBid} onChange={e => setStartingBid(e.target.value)} className="w-full mb-2 border p-2 rounded" />
+            <input 
+              type="number" 
+              value={startingBid} 
+              onChange={e => setStartingBid(e.target.value)} 
+              className="w-full mb-2 border p-2 rounded"
+              min="0.01"
+              step="0.01"
+              required
+            />
             <label className="block mb-2 text-sm font-medium">Reserve Price ($)</label>
-            <input type="number" value={reservePrice} onChange={e => setReservePrice(e.target.value)} className="w-full mb-2 border p-2 rounded" />
+            <input 
+              type="number" 
+              value={reservePrice} 
+              onChange={e => setReservePrice(e.target.value)} 
+              className="w-full mb-2 border p-2 rounded"
+              min="0.01"
+              step="0.01"
+              required
+            />
             <label className="block mb-2 text-sm font-medium">Auction Duration (days)</label>
-            <input type="number" value={auctionDuration} min={1} max={30} onChange={e => setAuctionDuration(e.target.value)} className="w-full mb-2 border p-2 rounded" />
+            <input 
+              type="number" 
+              value={auctionDuration} 
+              min={1} 
+              max={30} 
+              onChange={e => setAuctionDuration(e.target.value)} 
+              className="w-full mb-2 border p-2 rounded"
+              required
+            />
             <label className="block mb-2 text-sm font-medium">Start Date (optional)</label>
-            <input type="datetime-local" onChange={(e) => setStartDate(e.target.value)} className="w-full border p-2 rounded" />
+            <input 
+              type="datetime-local" 
+              onChange={(e) => setStartDate(e.target.value)} 
+              className="w-full border p-2 rounded"
+              min={new Date().toISOString().slice(0, 16)}
+            />
           </div>
         )}
 
