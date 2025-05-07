@@ -10,6 +10,8 @@ import Footer from "./components/layout/Footer";
 import ResetPassword from './pages/ResetPassword';
 import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
+import PurchasesPage from './pages/PurchasesPage';
+import MyListingsPage from './pages/MyListingsPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -48,7 +50,8 @@ function App() {
             <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/notifications" element={user ? <NotificationsPage user={user} /> : <Navigate to="/login" />} />
-
+            <Route path="/purchases" element={<PurchasesPage />} />
+            <Route path="/my-listings" element={<MyListingsPage />} />
           </Routes>
         </main>
         <Footer />
