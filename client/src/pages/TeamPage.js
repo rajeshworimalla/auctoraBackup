@@ -1,11 +1,12 @@
 import React from 'react';
 
 const teamMembers = [
-  { name: 'Raj', role: 'Lead Developer', img: '/Images/AboutUs.jpg' },
-  { name: 'Smera', role: 'UI/UX Designer', img: '/Images/AboutUs.jpg' },
-  { name: 'Mausham', role: 'Backend Engineer', img: '/Images/AboutUs.jpg' },
-  { name: 'Nima', role: 'Frontend Engineer', img: '/Images/AboutUs.jpg' },
-  { name: 'Utsav', role: 'Product Manager', img: '/Images/AboutUs.jpg' },
+  { name: 'Rajeshwori Malla', img: '/Images/Raj.jpeg' },
+  { name: 'Utsav Poudel', img: '/Images/Utsav.jpeg' },
+  { name: 'Smera Shrestha',img: '/Images/Smera.jpeg' },
+  { name: 'Mousam Bhandari', img: '/Images/Mousam.jpeg' },
+  { name: 'Nima Lama', img: '/Images/Nima.jpeg' },
+  
 ];
 
 const TeamPage = () => (
