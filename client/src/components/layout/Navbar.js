@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiSearch, FiUser, FiMenu, FiX, FiShoppingCart } from 'react-icons/fi';
 import { supabase } from '../../supabaseClient';
+import { FiBell } from 'react-icons/fi';
 
 const defaultAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
 
@@ -18,7 +19,31 @@ const Navbar = ({ user }) => {
       setCartCount(0);
     }
   }, [user]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
+  useEffect(() => {
+    if (user) {
+      fetchCartCount();
+      fetchUnreadNotifications();
+    } else {
+      setCartCount(0);
+      setUnreadCount(0);
+    }
+  }, [user]);
+  
+  const fetchUnreadNotifications = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('read', false);
+      if (error) throw error;
+      setUnreadCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
   const fetchCartCount = async () => {
     try {
       const { data, error } = await supabase
@@ -116,6 +141,15 @@ const Navbar = ({ user }) => {
             </Link>
           )}
         </div>
+        {/* Desktop */}
+<Link to="/notifications" className="relative hover:text-[#8B7355]">
+  <FiBell className="w-6 h-6" />
+  {unreadCount > 0 && (
+    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+      {unreadCount}
+    </span>
+  )}
+</Link>
 
         {/* Mobile Menu Button */}
         <button
@@ -157,6 +191,16 @@ const Navbar = ({ user }) => {
                     }}
                   />
                 </Link>
+                {/* Mobile */}
+<Link to="/notifications" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 hover:text-[#8B7355] relative">
+  <FiBell className="w-5 h-5" />
+  <span>Notifications{unreadCount > 0 ? ` (${unreadCount})` : ''}</span>
+  {unreadCount > 0 && (
+    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+      {unreadCount}
+    </span>
+  )}
+</Link>
                 <button
                   onClick={() => {
                     handleLogout();
@@ -175,6 +219,7 @@ const Navbar = ({ user }) => {
             </Link>
           )}
         </div>
+        
       )}
     </nav>
   );

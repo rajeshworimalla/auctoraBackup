@@ -18,6 +18,8 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
   const [medium, setMedium] = useState('oil');
   const [dimensions, setDimensions] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
+  const [successMessage, setSuccessMessage] = useState('');
+
 
   // Auction fields
   const [startingBid, setStartingBid] = useState('');
@@ -44,64 +46,67 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
     const user = await supabase.auth.getUser();
     const owner_id = user.data.user?.id || null;
     let finalImageUrl = imageUrl;
-
+  
     if (uploadMode === 'file') {
       const uploadedUrl = await handleFileUpload();
       if (!uploadedUrl) return;
       finalImageUrl = uploadedUrl;
     }
-
+  
     const { data: artworkData, error: artworkError } = await supabase
       .from('Artwork')
-      .insert([
-        {
-          title,
-          description,
-          price: parseFloat(price),
-          image_url: finalImageUrl,
-          category,
-          medium,
-          dimensions,
-          year: parseInt(year),
-          artist_name: artistName,
-          is_sold: false,
-          owner_id,
-        },
-      ])
+      .insert([{
+        title,
+        description,
+        price: parseFloat(price),
+        image_url: finalImageUrl,
+        category,
+        medium,
+        dimensions,
+        year: parseInt(year),
+        artist_name: artistName,
+        is_sold: false,
+        owner_id,
+      }])
       .select();
-
+  
     if (artworkError || !artworkData || !artworkData[0]) {
       alert('Insert failed');
       return;
     }
-
+  
     const artwork_id = artworkData[0].artwork_id;
-
+  
     if (mode === 'gallery') {
-      await supabase.from('gallery').insert([
-        { artwork_id, featured: false, display_order: 1 },
-      ]);
-      alert('Uploaded successfully to gallery');
-      onClose();
+      await supabase.from('gallery').insert([{
+        artwork_id, featured: false, display_order: 1
+      }]);
+      setSuccessMessage('Uploaded successfully to gallery');
+      setTimeout(() => {
+        setSuccessMessage('');
+        onClose();
+      }, 2000);
     } else if (mode === 'auction') {
       const start_time = startDate ? new Date(startDate) : new Date();
       const end_time = new Date(start_time.getTime() + auctionDuration * 24 * 60 * 60 * 1000);
-
-      await supabase.from('auctions').insert([
-        {
-          artwork_id,
-          starting_price: parseFloat(startingBid),
-          current_highest_bid: parseFloat(startingBid),
-          start_time: start_time.toISOString(),
-          end_time: end_time.toISOString(),
-          status: 'active',
-          reserve_price: parseFloat(reservePrice),
-        },
-      ]);
-      alert('Uploaded successfully to auction');
-      onClose();
+  
+      await supabase.from('auctions').insert([{
+        artwork_id,
+        starting_price: parseFloat(startingBid),
+        current_highest_bid: parseFloat(startingBid),
+        start_time: start_time.toISOString(),
+        end_time: end_time.toISOString(),
+        status: 'active',
+        reserve_price: parseFloat(reservePrice),
+      }]);
+      setSuccessMessage('Uploaded successfully to auction');
+      setTimeout(() => {
+        setSuccessMessage('');
+        onClose();
+      }, 2000);
     }
   };
+  
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="fixed inset-0 flex items-center justify-center z-50">

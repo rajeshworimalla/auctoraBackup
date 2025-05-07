@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Footer from "./components/layout/Footer";
 import ResetPassword from './pages/ResetPassword';
 import ProfilePage from './pages/ProfilePage';
+import NotificationsPage from './pages/NotificationsPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -46,6 +47,8 @@ function App() {
             <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" />} />
             <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/notifications" element={user ? <NotificationsPage user={user} /> : <Navigate to="/login" />} />
+
           </Routes>
         </main>
         <Footer />
