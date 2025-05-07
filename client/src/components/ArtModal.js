@@ -9,6 +9,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
   const [timeLeft, setTimeLeft] = useState({});
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // Check authentication status
   useEffect(() => {
@@ -177,36 +178,43 @@ const ArtModal = ({ isOpen, onClose, art }) => {
 
   // Submit bid logic
   const handleBid = async () => {
-    const bidAmountNum = parseFloat(bidAmount);
-    const currentHighestBid = highestBid;
-
-    // Validate bid amount
-    if (isNaN(bidAmountNum) || bidAmountNum <= 0) {
-      alert('Please enter a valid bid amount');
+    if (!user) {
+      const confirmLogin = window.confirm('You need to be logged in to place a bid. Would you like to log in now?');
+      if (confirmLogin) {
+        onClose();
+        navigate('/login');
+      }
       return;
     }
 
-    // Check if bid is higher than current highest bid
-    if (bidAmountNum <= currentHighestBid) {
-      alert(`Your bid must be higher than the current highest bid: $${currentHighestBid}`);
-      return;
-    }
-
-    const now = new Date();
-    const end = new Date(art.end_time);
-    if (now >= end) {
-      alert('Bidding has ended for this artwork.');
+    // Check if user is trying to bid on their own auction
+    if (user.id === art.artwork?.owner_id) {
+      alert('You cannot bid on your own auction.');
       return;
     }
 
     try {
+      setLoading(true);
+      const bidAmount = parseFloat(bidAmount);
+      
+      if (isNaN(bidAmount) || bidAmount <= highestBid) {
+        throw new Error('Bid must be higher than the current highest bid');
+      }
+
+      const now = new Date();
+      const end = new Date(art.end_time);
+      if (now >= end) {
+        alert('Bidding has ended for this artwork.');
+        return;
+      }
+
       // Get the auction ID and ensure it's a valid UUID
       const auctionId = art.auction_id;
       
       console.log('Debug - Bid Data:', {
         art: art,
         auctionId: auctionId,
-        bidAmount: bidAmountNum,
+        bidAmount: bidAmount,
         userId: user.id
       });
 
@@ -220,7 +228,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
         .insert([
           {
             auction_id: auctionId,
-            amount: bidAmountNum,
+            amount: bidAmount,
             bidder_id: user.id
           }
         ])
@@ -235,7 +243,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
       const { error: auctionError } = await supabase
         .from('auctions')
         .update({
-          current_highest_bid: bidAmountNum,
+          current_highest_bid: bidAmount,
           highest_bidder_id: user.id,
           status: 'active'
         })
@@ -262,9 +270,11 @@ const ArtModal = ({ isOpen, onClose, art }) => {
       
       // Refresh auction data
       fetchBids();
-    } catch (err) {
-      console.error('Bid placement error:', err);
-      alert(err.message || 'Failed to place bid. Please try again.');
+    } catch (error) {
+      console.error('Error placing bid:', error);
+      alert(error.message || 'Failed to place bid. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -327,30 +337,34 @@ const ArtModal = ({ isOpen, onClose, art }) => {
         )}
 
         {/* Bid Input */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex-1">
-            <input
-              type="number"
-              placeholder={`Min bid: $${highestBid + 1}`}
-              value={bidAmount}
-              onChange={(e) => setBidAmount(e.target.value)}
-              className="border px-2 py-1 w-full text-sm rounded"
-              disabled={timeLeft.expired}
-              min={highestBid + 1}
-            />
+        {timeLeft?.expired ? (
+          <p className="text-red-500 mb-2">Auction ended</p>
+        ) : user && user.id === art.artwork?.owner_id ? (
+          <div className="text-[#8B7355] font-serif text-center py-4">
+            This is your own auction
           </div>
-          <button
-            onClick={handleBidClick}
-            disabled={timeLeft.expired}
-            className={`px-4 py-1 text-sm border rounded ${
-              timeLeft.expired
-                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                : 'bg-black text-white hover:bg-gray-800'
-            }`}
-          >
-            {user ? 'Place Bid' : 'Login to Bid'}
-          </button>
-        </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                value={bidAmount}
+                onChange={(e) => setBidAmount(e.target.value)}
+                placeholder={`Minimum bid: $${highestBid + 1}`}
+                className="flex-1 p-2 border rounded"
+                min={highestBid + 1}
+                step="0.01"
+              />
+              <button
+                onClick={handleBid}
+                disabled={loading}
+                className="bg-[#8B7355] text-white px-4 py-2 rounded hover:bg-[#6B563D] transition-colors duration-200"
+              >
+                {loading ? 'Placing Bid...' : 'Place Bid'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Live Bids */}
         <div>

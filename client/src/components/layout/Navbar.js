@@ -76,9 +76,13 @@ const Navbar = ({ user }) => {
                 <FiShoppingCart size={22} />
               </Link>
               {/* Profile Dropdown */}
-              <div className="relative" ref={dropdownRef}>
+              <div 
+                className="relative" 
+                ref={dropdownRef}
+                onMouseEnter={() => setProfileDropdownOpen(true)}
+                onMouseLeave={() => setProfileDropdownOpen(false)}
+              >
                 <button
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   className="ml-2 rounded-full w-9 h-9 overflow-hidden border border-gray-300"
                 >
                   <img src={getAvatarUrl()} alt="Profile" className="w-full h-full object-cover" />

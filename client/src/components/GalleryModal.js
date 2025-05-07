@@ -29,59 +29,32 @@ const GalleryModal = ({ isOpen, onClose, artwork }) => {
     if (!user) {
       const confirmLogin = window.confirm('You need to be logged in to add items to cart. Would you like to log in now?');
       if (confirmLogin) {
-        sessionStorage.setItem('pendingCartItem', JSON.stringify({
-          artworkId: artwork.artwork_id,
-          quantity: quantity
-        }));
         onClose();
         navigate('/login');
       }
       return;
     }
 
+    // Check if user is trying to buy their own artwork
+    if (user.id === artwork.owner_id) {
+      alert('You cannot purchase your own artwork.');
+      return;
+    }
+
     try {
       setLoading(true);
-      // Check if item already exists in cart
-      const { data: existingItem, error: checkError } = await supabase
-        .from('cart_items')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('artwork_id', artwork.artwork_id)
-        .single();
+      const { error } = await supabase
+        .from('cart')
+        .insert([
+          {
+            user_id: user.id,
+            artwork_id: artwork.artwork_id,
+            quantity: quantity
+          }
+        ]);
 
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
-        throw checkError;
-      }
-
-      if (existingItem) {
-        // Update quantity if item exists
-        const { error: updateError } = await supabase
-          .from('cart_items')
-          .update({ 
-            quantity: existingItem.quantity + quantity,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingItem.id);
-
-        if (updateError) throw updateError;
-      } else {
-        // Insert new item if it doesn't exist
-        const { error: insertError } = await supabase
-          .from('cart_items')
-          .insert([
-            {
-              user_id: user.id,
-              artwork_id: artwork.artwork_id,
-              quantity: quantity,
-              price: artwork.price
-            }
-          ]);
-
-        if (insertError) throw insertError;
-      }
-
+      if (error) throw error;
       alert('Added to cart successfully!');
-      onClose();
     } catch (error) {
       console.error('Error adding to cart:', error);
       alert('Failed to add to cart. Please try again.');
@@ -194,23 +167,30 @@ const GalleryModal = ({ isOpen, onClose, artwork }) => {
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-3 pt-4">
-              <div className="flex items-center gap-2">
-                <button
-                  className={`flex-1 bg-[#8B7355] text-white py-3 px-6 rounded-lg hover:bg-[#6B563D] transition-all duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  onClick={handleAddToCart}
-                  disabled={loading}
-                >
-                  {loading ? 'Adding...' : 'Add to Cart'}
-                </button>
-                <button
-                  className={`flex-1 border border-[#8B7355] text-[#8B7355] py-3 px-6 rounded-lg hover:bg-[#8B7355] hover:text-white transition-all duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  onClick={handleBuyNow}
-                  disabled={loading}
-                >
-                  Buy Now
-                </button>
-              </div>
+            <div className="flex space-x-4 mt-6">
+              {user && user.id === artwork.owner_id ? (
+                <div className="text-[#8B7355] font-serif">
+                  This is your own artwork
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={loading}
+                    className="flex-1 bg-[#8B7355] text-white px-6 py-3 rounded-lg hover:bg-[#6B563D] transition-colors duration-200 flex items-center justify-center space-x-2"
+                  >
+                    <FiShoppingCart />
+                    <span>Add to Cart</span>
+                  </button>
+                  <button
+                    onClick={handleBuyNow}
+                    disabled={loading}
+                    className="flex-1 bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors duration-200"
+                  >
+                    Buy Now
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Shipping and Returns Info */}

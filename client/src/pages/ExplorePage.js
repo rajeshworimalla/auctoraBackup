@@ -25,7 +25,8 @@ const ExplorePage = () => {
     minPrice: '',
     maxPrice: '',
     artist: '',
-    sortBy: 'newest'
+    sortBy: 'newest',
+    showMyListings: false
   });
 
   // Test Supabase connection
@@ -61,6 +62,7 @@ const ExplorePage = () => {
       setLoading(true);
       setError(null);
   
+      const { data: { user } } = await supabase.auth.getUser();
       let query = supabase
         .from('gallery')
         .select(`
@@ -86,6 +88,9 @@ const ExplorePage = () => {
       }
       if (filters.maxPrice) {
         query = query.lte('Artwork.price', filters.maxPrice);
+      }
+      if (filters.showMyListings && user) {
+        query = query.eq('Artwork.owner_id', user.id);
       }
 
       // Apply sorting
@@ -138,6 +143,7 @@ const ExplorePage = () => {
       setLoading(true);
       setError(null);
 
+      const { data: { user } } = await supabase.auth.getUser();
       let query = supabase
         .from('auctions')
         .select(`
@@ -161,6 +167,9 @@ const ExplorePage = () => {
       }
       if (filters.maxPrice) {
         query = query.lte('starting_price', filters.maxPrice);
+      }
+      if (filters.showMyListings && user) {
+        query = query.eq('Artwork.owner_id', user.id);
       }
 
       // Apply sorting
@@ -268,7 +277,8 @@ const ExplorePage = () => {
       minPrice: '',
       maxPrice: '',
       artist: '',
-      sortBy: 'newest'
+      sortBy: 'newest',
+      showMyListings: false
     });
   };
 
@@ -413,6 +423,19 @@ const ExplorePage = () => {
                 </select>
                 <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </div>
+            </div>
+            {/* Show My Listings Toggle */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="showMyListings"
+                checked={filters.showMyListings}
+                onChange={(e) => setFilters({ ...filters, showMyListings: e.target.checked })}
+                className="rounded border-gray-300 text-[#8B7355] focus:ring-[#8B7355]"
+              />
+              <label htmlFor="showMyListings" className="text-sm font-medium text-gray-700">
+                Show My Active Listings
+              </label>
             </div>
             {/* Filter Actions */}
             <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
