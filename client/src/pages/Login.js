@@ -168,19 +168,22 @@ const Login = () => {
     }
 
     try {
-      console.log('Starting signup process...', {
-        email: formData.email,
-        metadata: {
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          phone: formData.phone,
-          username: `${formData.firstName} ${formData.lastName}`,
-        }
-      });
+      // First, check if user already exists
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', formData.email)
+        .single();
+
+      if (existingUser) {
+        setError('An account with this email already exists. Please sign in instead.');
+        setIsSignUp(false);
+        setLoading(false);
+        return;
+      }
 
       // Get the current URL origin
       const siteUrl = window.location.origin;
-      console.log('Site URL:', siteUrl);
 
       // Sign up the user with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -197,15 +200,12 @@ const Login = () => {
         }
       });
 
-      console.log('Signup response:', { authData, authError });
-
       if (authError) {
+        console.error('Auth error:', authError);
         if (authError.message.includes('already registered')) {
           setError('An account with this email already exists. Please sign in instead.');
-        } else if (authError.message.includes('database')) {
-          setError('Unable to create account. Please try again later.');
         } else {
-          setError(authError.message);
+          setError('Unable to create account. Please try again later.');
         }
         return;
       }
@@ -213,13 +213,35 @@ const Login = () => {
       // Check if user already exists
       if (authData?.user?.identities?.length === 0) {
         setError('An account with this email already exists. Please sign in instead.');
-        setIsSignUp(false); // Switch to login form
+        setIsSignUp(false);
+        return;
+      }
+
+      // Create user in users table
+      const { error: userError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: authData.user.id,
+            email: formData.email,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: formData.phone,
+            username: `${formData.firstName} ${formData.lastName}`,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ]);
+
+      if (userError) {
+        console.error('User creation error:', userError);
+        setError('Unable to create user account. Please try again later.');
         return;
       }
 
       // If we get here, it's a successful new signup
       alert('Check your email for the confirmation link!');
-      setIsSignUp(false); // Switch back to login form
+      setIsSignUp(false);
       setFormData({
         firstName: '',
         lastName: '',
@@ -230,11 +252,7 @@ const Login = () => {
       setPasswordStrength({ score: 0, message: '' });
     } catch (error) {
       console.error('Signup error:', error);
-      if (error.message.includes('database')) {
-        setError('Unable to create account. Please try again later.');
-      } else {
-        setError(error.message);
-      }
+      setError('Unable to create account. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -425,12 +443,12 @@ const Login = () => {
             </div>
           )}
 
-          <div className="flex flex-col space-y-2 mt-4">
+          <div className="flex flex-col items-center space-y-2 mt-4">
             {!isSignUp && !isForgotPassword && (
               <button
                 type="button"
                 onClick={() => setIsForgotPassword(true)}
-                className="font-semibold text-[#8B7355] hover:text-[#6B563D] transition-all duration-300 ease-in-out transform hover:scale-105 text-base text-left"
+                className="font-semibold text-[#8B7355] hover:text-[#6B563D] transition-all duration-300 ease-in-out transform hover:scale-105 text-base text-center"
               >
                 Forgot your password?
               </button>
@@ -443,7 +461,7 @@ const Login = () => {
                 setResetEmailSent(false);
                 setError(null);
               }}
-              className="font-semibold text-[#8B7355] hover:text-[#6B563D] transition-all duration-300 ease-in-out transform hover:scale-105 text-base text-left"
+              className="font-semibold text-[#8B7355] hover:text-[#6B563D] transition-all duration-300 ease-in-out transform hover:scale-105 text-base text-center"
             >
               {isForgotPassword ? 'Back to login' : 
                 (isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up")}
