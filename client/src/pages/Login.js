@@ -175,24 +175,6 @@ const Login = () => {
         phone: formData.phone
       });
 
-      // First, check if user already exists
-      const { data: existingUser, error: checkError } = await supabase
-        .from('users')
-        .select('User_Id')
-        .eq('Email', formData.email)
-        .single();
-
-      if (checkError && !checkError.message.includes('No rows found')) {
-        console.error('Error checking existing user:', checkError);
-      }
-
-      if (existingUser) {
-        setError('An account with this email already exists. Please sign in instead.');
-        setIsSignUp(false);
-        setLoading(false);
-        return;
-      }
-
       // Get the current URL origin
       const siteUrl = window.location.origin;
       console.log('Attempting to create auth user...');
@@ -245,24 +227,15 @@ const Login = () => {
 
       console.log('Attempting to create user record in database...');
 
-      const userData = {
-        User_Id: authData.user.id,
-        Email: formData.email,
-        Fname: formData.firstName,
-        Lname: formData.lastName,
-        Phone: formData.phone,
-        Username: `${formData.firstName} ${formData.lastName}`,
-        Created_At: new Date().toISOString(),
-        Updated_At: new Date().toISOString()
-      };
-
-      console.log("Inserting user with values:", userData);
-
       // Create user in users table with correct column names
-      const { error: userError } = await supabase
-        .from('users')
-        .insert([userData])
-        .select();
+      const { error: userError } = await supabase.rpc('create_user_profile', {
+        p_user_id: authData.user.id,
+        p_email: formData.email,
+        p_fname: formData.firstName,
+        p_lname: formData.lastName,
+        p_phone: formData.phone,
+        p_username: `${formData.firstName} ${formData.lastName}`
+      });
 
       if (userError) {
         console.error('User creation error details:', {
@@ -271,6 +244,14 @@ const Login = () => {
           hint: userError.hint,
           code: userError.code
         });
+        
+        // If there's an error, try to delete the auth user
+        try {
+          await supabase.auth.admin.deleteUser(authData.user.id);
+        } catch (deleteError) {
+          console.error('Error cleaning up auth user:', deleteError);
+        }
+        
         setError(`Unable to create user account: ${userError.message}`);
         return;
       }
