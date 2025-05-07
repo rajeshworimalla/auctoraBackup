@@ -136,14 +136,17 @@ const HeroSection = () => {
           {/* How It Works */}
           <div className="bg-[#D3CABE] flex flex-col justify-center items-center px-6 md:px-12 py-8">
             <div className="max-w-md space-y-4">
-              <span className="text-sm tracking-wider text-black/60 uppercase">Get Started</span>
-              <h2 className="text-4xl font-serif mb-2">How It Works</h2>
+              <span className="text-sm tracking-wider text-black/60 uppercase font-serif">Get Started</span>
+              <h2 className="text-6xl font-serif mb-2">How It Works</h2>
               <div className="w-20 h-1 bg-black/20 mb-4"></div>
               <p className="text-base font-light font-serif">
                 <strong>Auctions:</strong> Join live auctions, place your bids, and win unique pieces.
               </p>
               <p className="text-base font-light font-serif">
                 <strong>Gallery:</strong> Prefer instant buys? Browse and purchase directly from our handpicked collections.
+              </p>
+              <p className="text-base font-light font-serif">
+                <strong>Community:</strong> Connect with fellow art enthusiasts and share your passion for creativity.
               </p>
             </div>
           </div>
@@ -161,7 +164,7 @@ const HeroSection = () => {
             </p>
             <Link
               to="/explore"
-              className="inline-block border-2 border-[#8B7355] px-6 py-3 text-sm text-[#8B7355] hover:bg-[#8B7355] hover:text-white hover:scale-105 hover:shadow-lg hover:shadow-[#8B7355] transition-all duration-300 font-serif"
+              className="inline-block border-2 border-[#8B7355] px-6 py-3 text-base text-white bg-[#8B7355] hover:bg-[#6B563D] hover:scale-105 hover:shadow-lg hover:shadow-[#8B7355] transition-all duration-300 font-serif"
             >
               Explore Now
             </Link>
