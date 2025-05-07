@@ -225,56 +225,8 @@ const Login = () => {
         return;
       }
 
-      console.log('Attempting to create user record in database...');
-
-      // Create user in users table with minimal data first
-      const { error: userError } = await supabase
-        .from('users')
-        .insert({
-          User_Id: authData.user.id,
-          Email: formData.email
-        });
-
-      if (userError) {
-        console.error('User creation error details:', {
-          message: userError.message,
-          details: userError.details,
-          hint: userError.hint,
-          code: userError.code
-        });
-        
-        // If there's an error, try to delete the auth user
-        try {
-          await supabase.auth.admin.deleteUser(authData.user.id);
-        } catch (deleteError) {
-          console.error('Error cleaning up auth user:', deleteError);
-        }
-        
-        setError(`Unable to create user account: ${userError.message}`);
-        return;
-      }
-
-      // Update the user record with additional information
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          Fname: formData.firstName,
-          Lname: formData.lastName,
-          Phone: formData.phone,
-          Username: `${formData.firstName} ${formData.lastName}`,
-          Updated_At: new Date().toISOString()
-        })
-        .eq('User_Id', authData.user.id);
-
-      if (updateError) {
-        console.error('User update error:', updateError);
-        // Don't return here as the user is already created
-      }
-
-      console.log('User record created successfully');
-
       // If we get here, it's a successful new signup
-      alert('Check your email for the confirmation link!');
+      alert('Please check your email for a verification link. You must verify your email before you can sign in.');
       setIsSignUp(false);
       setFormData({
         firstName: '',
@@ -294,6 +246,42 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  // Add this new function to handle email verification
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN') {
+        // Check if this is a new user who just verified their email
+        if (session?.user?.email_confirmed_at) {
+          try {
+            // Create the user record in public.users
+            const { error: userError } = await supabase
+              .from('users')
+              .insert({
+                User_Id: session.user.id,
+                Email: session.user.email,
+                Fname: session.user.user_metadata.first_name,
+                Lname: session.user.user_metadata.last_name,
+                Phone: session.user.user_metadata.phone,
+                Username: session.user.user_metadata.username,
+                Created_At: new Date().toISOString(),
+                Updated_At: new Date().toISOString()
+              });
+
+            if (userError) {
+              console.error('Error creating user record:', userError);
+            }
+          } catch (error) {
+            console.error('Error in email verification handler:', error);
+          }
+        }
+      }
+    });
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
+  }, []);
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
