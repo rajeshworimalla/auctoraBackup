@@ -263,12 +263,12 @@ const Login = () => {
 
       if (userError) {
         console.error('User creation error details:', {
-          message: insertError.message,
-          details: insertError.details,
-          hint: insertError.hint,
-          code: insertError.code
+          message: userError.message,
+          details: userError.details,
+          hint: userError.hint,
+          code: userError.code
         });
-        setError(`Unable to create user account: ${insertError.message}`);
+        setError(`Unable to create user account: ${userError.message}`);
         return;
       }
 
