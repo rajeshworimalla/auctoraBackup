@@ -17,6 +17,7 @@ const ExplorePage = () => {
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [showMyListings, setShowMyListings] = useState(false);
+  const [user, setUser] = useState(null);
 
   const [activeFilterTab, setActiveFilterTab] = useState('basic');
   const [selectedItem, setSelectedItem] = useState(null);
@@ -66,6 +67,15 @@ const ExplorePage = () => {
       fetchAuctions();
     }
   }, [showMyListings]);
+
+  // Add useEffect to get user
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+  }, []);
 
   const fetchArtworks = async () => {
     try {
@@ -475,19 +485,23 @@ const ExplorePage = () => {
               )}
             </button>
 
-            <button
-              onClick={() => setShowUpload(true)}
-              className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
-            >
-              Upload Your Artwork
-            </button>
+            {user && (
+              <>
+                <button
+                  onClick={() => setShowUpload(true)}
+                  className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
+                >
+                  Upload Your Artwork
+                </button>
 
-            <button
-              onClick={() => setShowMyListings(!showMyListings)}
-              className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
-            >
-              {showMyListings ? 'Show All Listings' : 'Show My Active Listings'}
-            </button>
+                <button
+                  onClick={() => setShowMyListings(!showMyListings)}
+                  className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
+                >
+                  {showMyListings ? 'Show All Listings' : 'Show My Active Listings'}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
