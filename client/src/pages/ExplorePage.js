@@ -72,6 +72,7 @@ const ExplorePage = () => {
       setLoading(true);
       setError(null);
 
+      const { data: { user } } = await supabase.auth.getUser();
       let query = supabase
         .from('Artwork')
         .select('*')
@@ -90,7 +91,7 @@ const ExplorePage = () => {
       if (filters.medium) {
         query = query.eq('medium', filters.medium);
       }
-      if (filters.showMyListings && user) {
+      if (showMyListings && user) {
         query = query.eq('owner_id', user.id);
       }
 
