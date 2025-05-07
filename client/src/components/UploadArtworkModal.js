@@ -201,6 +201,19 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
           </div>
         )}
 
+        {/* Upload Type Selection First */}
+        <div className="mb-6">
+          <label className="block mb-2 text-sm font-medium">Upload For</label>
+          <select 
+            value={mode} 
+            onChange={(e) => setMode(e.target.value)} 
+            className="w-full border p-2 rounded"
+          >
+            <option value="gallery">Gallery</option>
+            <option value="auction">Auction</option>
+          </select>
+        </div>
+
         <label className="block mb-2 text-sm font-medium">Title</label>
         <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full mb-3 border p-2 rounded" />
 
@@ -238,32 +251,21 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        <label className="block mb-2 text-sm font-medium">Price ($)</label>
-        <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full mb-3 border p-2 rounded" />
-
-        <div className="mb-4">
-          <label className="block mb-1 text-sm font-medium">Image Source</label>
-          <select value={uploadMode} onChange={(e) => setUploadMode(e.target.value)} className="mb-2 w-full border p-2 rounded">
-            <option value="url">Public Image URL</option>
-            <option value="file">Upload from Computer</option>
-          </select>
-
-          {uploadMode === 'url' ? (
-            <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full border p-2 rounded" />
-          ) : (
-            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} className="w-full border p-2 rounded" />
-          )}
-        </div>
-
-        <div className="mb-4">
-          <label className="block mb-1 text-sm font-medium">Upload For</label>
-          <select value={mode} onChange={(e) => setMode(e.target.value)} className="w-full border p-2 rounded">
-            <option value="gallery">Gallery</option>
-            <option value="auction">Auction</option>
-          </select>
-        </div>
-
-        {mode === 'auction' && (
+        {/* Conditional Fields based on mode */}
+        {mode === 'gallery' ? (
+          <div className="mb-4">
+            <label className="block mb-2 text-sm font-medium">Price ($)</label>
+            <input 
+              type="number" 
+              value={price} 
+              onChange={(e) => setPrice(e.target.value)} 
+              className="w-full border p-2 rounded"
+              min="0.01"
+              step="0.01"
+              required
+            />
+          </div>
+        ) : (
           <div className="mb-4 border rounded p-3 bg-gray-50">
             <label className="block mb-2 text-sm font-medium">Starting Bid ($)</label>
             <input 
@@ -304,6 +306,20 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
             />
           </div>
         )}
+
+        <div className="mb-4">
+          <label className="block mb-1 text-sm font-medium">Image Source</label>
+          <select value={uploadMode} onChange={(e) => setUploadMode(e.target.value)} className="mb-2 w-full border p-2 rounded">
+            <option value="url">Public Image URL</option>
+            <option value="file">Upload from Computer</option>
+          </select>
+
+          {uploadMode === 'url' ? (
+            <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full border p-2 rounded" />
+          ) : (
+            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files[0])} className="w-full border p-2 rounded" />
+          )}
+        </div>
 
         <div className="flex justify-end space-x-2 mt-4">
           <button 

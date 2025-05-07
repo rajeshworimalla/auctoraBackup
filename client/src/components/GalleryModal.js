@@ -25,6 +25,15 @@ const GalleryModal = ({ isOpen, onClose, artwork }) => {
     }
   };
 
+  const handleQuantityInput = (e) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 1) {
+      setQuantity(value);
+    } else if (e.target.value === '') {
+      setQuantity(1);
+    }
+  };
+
   const handleAddToCart = async () => {
     if (!user) {
       const confirmLogin = window.confirm('You need to be logged in to add items to cart. Would you like to log in now?');
@@ -183,7 +192,13 @@ const GalleryModal = ({ isOpen, onClose, artwork }) => {
                 >
                   <FiMinus className="w-4 h-4" />
                 </button>
-                <span className="px-4 py-2 border-x">{quantity}</span>
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={handleQuantityInput}
+                  min="1"
+                  className="w-16 px-4 py-2 border-x text-center focus:outline-none"
+                />
                 <button
                   onClick={() => handleQuantityChange(1)}
                   className="p-2 hover:bg-gray-100"
@@ -196,8 +211,8 @@ const GalleryModal = ({ isOpen, onClose, artwork }) => {
             {/* Action Buttons */}
             <div className="flex space-x-4 mt-6">
               {user && user.id === artwork.owner_id ? (
-                <div className="text-[#8B7355] font-serif">
-                  This is your own artwork
+                <div className="text-black font-serif">
+                  This is your own artwork.
                 </div>
               ) : (
                 <>
