@@ -10,11 +10,12 @@ import UploadArtworkModal from '../components/UploadArtworkModal';
 const ExplorePage = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('auction');
+  const [activeTab, setActiveTab] = useState('auctions');
   const [artworks, setArtworks] = useState([]);
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
+
   const [activeFilterTab, setActiveFilterTab] = useState('basic');
   const [selectedItem, setSelectedItem] = useState(null);
   const [filters, setFilters] = useState({
@@ -26,17 +27,7 @@ const ExplorePage = () => {
     artist: '',
     sortBy: 'newest'
   });
-  const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-  
-    getUser();
-  }, []);
-  
   // Test Supabase connection
   useEffect(() => {
     const testConnection = async () => {
@@ -284,11 +275,10 @@ const ExplorePage = () => {
   // Filter section component
   const FilterSection = () => (
     <div
-  className={`transition-all duration-300 ease-in-out ${
-    showFilters ? 'block' : 'hidden'
-  }`}
->
-
+    className={`transition-all duration-300 ease-in-out ${
+      showFilters ? 'block' : 'hidden'
+    } md:block`}
+  >
   
       {/* Overlay for mobile to close filter panel when clicking outside */}
       {showFilters && (
@@ -515,15 +505,12 @@ const ExplorePage = () => {
               )}
             </button>
 
-            {user && (
-  <button
-    onClick={() => setShowUpload(true)}
-    className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
-  >
-    Upload Your Artwork
-  </button>
-)}
-
+            <button
+              onClick={() => setShowUpload(true)}
+              className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
+            >
+              Upload Your Artwork
+            </button>
           </div>
         </div>
 

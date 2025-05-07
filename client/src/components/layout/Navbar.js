@@ -11,6 +11,8 @@ const Navbar = ({ user }) => {
   const [cartCount, setCartCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,13 +44,29 @@ const Navbar = ({ user }) => {
 
   // Close profile dropdown on outside click
   useEffect(() => {
-    if (!profileDropdownOpen) return;
+    if (!profileDropdownOpen && !notifDropdownOpen) return;
     const handleClick = (e) => {
       if (!e.target.closest('.profile-dropdown')) setProfileDropdownOpen(false);
+      if (!e.target.closest('.notif-dropdown')) setNotifDropdownOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [profileDropdownOpen]);
+  }, [profileDropdownOpen, notifDropdownOpen]);
+
+  // Fetch notifications when dropdown opens
+  useEffect(() => {
+    if (!user || !notifDropdownOpen) return;
+    const fetchNotifications = async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (!error) setNotifications(data);
+    };
+    fetchNotifications();
+  }, [user, notifDropdownOpen]);
 
   const fetchCartCount = async () => {
     try {
@@ -112,88 +130,105 @@ const Navbar = ({ user }) => {
             />
           </Link>
         </div>
-
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center space-x-8 w-full">
-          <Link to="/" className="hover:underline">Home</Link>
-          <Link to="/about" className="hover:underline">About</Link>
-          <div className="flex items-center gap-4 ml-auto">
-            {user ? (
-              <>
-                <Link to="/cart" className="relative hover:text-[#8B7355]">
-                  <FiShoppingCart className="w-6 h-6" />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-[#8B7355] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {cartCount}
-                    </span>
-                  )}
-                </Link>
-                <Link to="/notifications" className="relative hover:text-[#8B7355]">
-                  <FiBell className="w-6 h-6" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                </Link>
-                <div className="relative profile-dropdown">
-                  <button
-                    onClick={() => setProfileDropdownOpen((open) => !open)}
-                    className="focus:outline-none"
-                  >
-                    <img
-                      src={getProfileAvatar()}
-                      alt="Profile"
-                      className="w-8 h-8 rounded-full object-contain border-2 border-[#8B7355]"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = defaultAvatar;
-                      }}
-                    />
-                  </button>
-                  {profileDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-50">
-                      <Link
-                        to="/profile"
-                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                        onClick={() => setProfileDropdownOpen(false)}
+        {/* Icons block - moved to the left after logo */}
+        {user && (
+          <div className="flex items-center gap-4">
+            <Link to="/cart" className="relative hover:text-[#8B7355]">
+              <FiShoppingCart className="w-6 h-6" />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[#8B7355] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+            {/* Notification Bell with Dropdown */}
+            <div className="relative notif-dropdown">
+              <button
+                onClick={() => setNotifDropdownOpen((open) => !open)}
+                className="relative focus:outline-none"
+              >
+                <FiBell className="w-6 h-6" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+              {notifDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-80 max-h-96 bg-white border border-gray-200 rounded shadow-lg z-50 overflow-y-auto">
+                  <div className="p-4 font-bold border-b">Notifications</div>
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-gray-500 text-center">No notifications yet.</div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`px-4 py-3 border-b hover:bg-gray-50 cursor-pointer ${notif.read ? 'text-gray-500' : 'font-semibold bg-gray-100'}`}
                       >
-                        Edit Profile
-                      </Link>
-                      <Link
-                        to="/purchases"
-                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                        onClick={() => setProfileDropdownOpen(false)}
-                      >
-                        My Purchases
-                      </Link>
-                      <Link
-                        to="/my-listings"
-                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                        onClick={() => setProfileDropdownOpen(false)}
-                      >
-                        My Listings
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
-                          handleLogout();
-                        }}
-                        className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
-                      >
-                        Sign Out
-                      </button>
-                    </div>
+                        {notif.message}
+                        <div className="text-xs text-gray-400 mt-1">{new Date(notif.created_at).toLocaleString()}</div>
+                      </div>
+                    ))
                   )}
                 </div>
-              </>
-            ) : (
-              <Link to="/login" className="hover:underline flex items-center gap-1">
-                <FiUser />
-                <span>Login / Signup</span>
-              </Link>
-            )}
+              )}
+            </div>
+            <div className="relative profile-dropdown">
+              <button
+                onClick={() => setProfileDropdownOpen((open) => !open)}
+                className="focus:outline-none"
+              >
+                <img
+                  src={getProfileAvatar()}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-contain border-2 border-[#8B7355]"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = defaultAvatar;
+                  }}
+                />
+              </button>
+              {profileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-50">
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setProfileDropdownOpen(false)}
+                  >
+                    Edit Profile
+                  </Link>
+                  <Link
+                    to="/purchases"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setProfileDropdownOpen(false)}
+                  >
+                    My Purchases
+                  </Link>
+                  <Link
+                    to="/my-listings"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setProfileDropdownOpen(false)}
+                  >
+                    My Listings
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setProfileDropdownOpen(false);
+                      handleLogout();
+                    }}
+                    className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
+        )}
+        {/* Desktop Menu */}
+        <div className="hidden md:flex items-center space-x-8">
+          <Link to="/" className="hover:underline">Home</Link>
+          <Link to="/about" className="hover:underline">About</Link>
         </div>
 
         {/* Mobile Menu Button */}
