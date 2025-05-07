@@ -32,6 +32,40 @@ const Navbar = ({ user }) => {
     }
   };
 
+  const handleAboutClick = (e) => {
+    e.preventDefault();
+    navigate('/');
+    // Wait for navigation to complete before scrolling
+    setTimeout(() => {
+      const aboutSection = document.getElementById('about');
+      if (aboutSection) {
+        aboutSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  const handleHowItWorksClick = (e) => {
+    e.preventDefault();
+    navigate('/');
+    setTimeout(() => {
+      const howItWorksSection = document.getElementById('how-it-works');
+      if (howItWorksSection) {
+        howItWorksSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  const handleContactClick = (e) => {
+    e.preventDefault();
+    navigate('/');
+    setTimeout(() => {
+      const footerSection = document.getElementById('footer');
+      if (footerSection) {
+        footerSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
   const getAvatarUrl = () => {
     if (!user) return null;
     return user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
@@ -55,9 +89,9 @@ const Navbar = ({ user }) => {
         {!user && (
           <div className="absolute left-1/2 transform -translate-x-1/2 flex space-x-8 text-base font-medium">
             <Link to="/" className="hover:underline">Home</Link>
-            <a href="#about" className="hover:underline">About Us</a>
-            <a href="#how-it-works" className="hover:underline">How It Works</a>
-            <a href="#footer" className="hover:underline">Contact</a>
+            <a href="#" onClick={handleAboutClick} className="hover:underline">About Us</a>
+            <a href="#" onClick={handleHowItWorksClick} className="hover:underline">How It Works</a>
+            <a href="#" onClick={handleContactClick} className="hover:underline">Contact Us</a>
           </div>
         )}
 

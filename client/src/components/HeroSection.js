@@ -134,7 +134,7 @@ const HeroSection = () => {
           </div>
 
           {/* How It Works */}
-          <div className="bg-[#D3CABE] flex flex-col justify-center items-center px-6 md:px-12 py-8">
+          <div id="how-it-works" className="bg-[#D3CABE] flex flex-col justify-center items-center px-6 md:px-12 py-8">
             <div className="max-w-md space-y-4">
               <span className="text-sm tracking-wider text-black/60 uppercase font-serif">Get Started</span>
               <h2 className="text-6xl font-serif mb-2">How It Works</h2>
@@ -254,7 +254,7 @@ const HeroSection = () => {
       <section className="bg-[#D3CABE] text-black font-serif">
 
         {/* Section 1: About Us (Text Left, Image Right) */}
-        <div className="flex flex-col lg:flex-row h-[90vh]">
+        <div id="about" className="flex flex-col lg:flex-row h-[90vh]">
           <div className="lg:w-1/2 w-full flex flex-col justify-center items-center p-8 lg:p-20 bg-[#D3CABE]">
             <div className="max-w-xl space-y-8">
               <div className="space-y-2">

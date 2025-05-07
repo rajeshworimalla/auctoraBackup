@@ -414,12 +414,12 @@ const Login = () => {
             </div>
           )}
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col space-y-2 mt-4">
             {!isSignUp && !isForgotPassword && (
               <button
                 type="button"
                 onClick={() => setIsForgotPassword(true)}
-                className="font-semibold text-[#8B7355] hover:text-[#6B563D] transition-all duration-300 ease-in-out transform hover:scale-105 text-base"
+                className="font-semibold text-[#8B7355] hover:text-[#6B563D] transition-all duration-300 ease-in-out transform hover:scale-105 text-base text-left"
               >
                 Forgot your password?
               </button>
@@ -432,7 +432,7 @@ const Login = () => {
                 setResetEmailSent(false);
                 setError(null);
               }}
-              className="font-semibold text-[#8B7355] hover:text-[#6B563D] transition-all duration-300 ease-in-out transform hover:scale-105 text-base"
+              className="font-semibold text-[#8B7355] hover:text-[#6B563D] transition-all duration-300 ease-in-out transform hover:scale-105 text-base text-left"
             >
               {isForgotPassword ? 'Back to login' : 
                 (isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up")}
