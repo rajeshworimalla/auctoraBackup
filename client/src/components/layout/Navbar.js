@@ -1,144 +1,79 @@
-// src/components/layout/Navbar.js
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FiSearch, FiUser, FiMenu, FiX, FiShoppingCart, FiBell } from 'react-icons/fi';
-import { supabase } from '../../supabaseClient';
-
-const defaultAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+// Updated Navbar layout with conditional rendering for logged-in users
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { FiShoppingCart, FiBell } from 'react-icons/fi';
 
 const Navbar = ({ user }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      fetchCartCount();
-      fetchUnreadNotifications();
-    } else {
-      setCartCount(0);
-      setUnreadCount(0);
-    }
-  }, [user]);
-
-  // Real-time cart count subscription
-  useEffect(() => {
-    if (!user) return;
-    // Subscribe to cart_items changes for this user
-    const subscription = supabase
-      .channel('cart_items_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'cart_items', filter: `user_id=eq.${user.id}` },
-        () => fetchCartCount()
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, [user]);
-
-  // Close profile dropdown on outside click
-  useEffect(() => {
-    if (!profileDropdownOpen && !notifDropdownOpen) return;
-    const handleClick = (e) => {
-      if (!e.target.closest('.profile-dropdown')) setProfileDropdownOpen(false);
-      if (!e.target.closest('.notif-dropdown')) setNotifDropdownOpen(false);
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [profileDropdownOpen, notifDropdownOpen]);
-
-  // Fetch notifications when dropdown opens
-  useEffect(() => {
-    if (!user || !notifDropdownOpen) return;
-    const fetchNotifications = async () => {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (!error) setNotifications(data);
-    };
-    fetchNotifications();
-  }, [user, notifDropdownOpen]);
-
-  const fetchCartCount = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('cart_items')
-        .select('id', { count: 'exact' })
-        .eq('user_id', user.id);
-      if (error) throw error;
-      setCartCount(data.length);
-    } catch (error) {
-      console.error('Error fetching cart count:', error);
-    }
-  };
-
-  const fetchUnreadNotifications = async () => {
-    try {
-      const { count, error } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('read', false);
-      if (error) throw error;
-      setUnreadCount(count || 0);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      navigate('/');
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
-
-  // Get the appropriate avatar URL
-  const getProfileAvatar = () => {
+  const getAvatarUrl = () => {
     if (!user) return null;
-    
-    // If user has a saved custom avatar URL, use it
-    if (user.user_metadata?.avatar_url) {
-      return user.user_metadata.avatar_url;
-    }
-    
-    // Otherwise generate a default avatar based on email
-    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
+    return user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
   };
 
   return (
     <nav className="bg-[#D3CABE] text-black py-4 shadow-sm relative z-50">
-      <div className="w-full flex items-center justify-between px-4 sm:px-6">
-        {/* Nav Links + Auth (all left) */}
-        <div className="flex items-center space-x-8">
-          <Link to="/" className="hover:underline">Home</Link>
-          <a href="#about" className="hover:underline">About Us</a>
-          <a href="#how-it-works" className="hover:underline">How It Works</a>
-          <a href="#footer" className="hover:underline">Contact</a>
-          {!user && (
+      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
+        {/* Left: Notification, Cart, Profile when logged in OR Login when logged out */}
+        <div className="flex items-center space-x-4">
+          {!user ? (
             <Link to="/login" className="bg-[#8B7355] text-white px-4 py-2 rounded hover:bg-[#6B563D]">
               Login / Signup
             </Link>
+          ) : (
+            <>
+              <Link to="/notifications" className="relative">
+                <FiBell size={22} />
+              </Link>
+              <Link to="/cart" className="relative">
+                <FiShoppingCart size={22} />
+              </Link>
+              {/* Profile Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="ml-2 rounded-full w-9 h-9 overflow-hidden border border-gray-300"
+                >
+                  <img src={getAvatarUrl()} alt="Profile" className="w-full h-full object-cover" />
+                </button>
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                    <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit Profile</Link>
+                    <Link to="/purchases" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Purchases</Link>
+                    <Link to="/my-listings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Listings</Link>
+                    <button
+                      onClick={() => {
+                        setProfileDropdownOpen(false);
+                        window.location.href = '/logout';
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
-        {/* Logo */}
+
+        {/* Center: Nav Links (only when logged out) */}
+        {!user && (
+          <div className="absolute left-1/2 transform -translate-x-1/2 flex space-x-8 text-base font-medium">
+            <Link to="/" className="hover:underline">Home</Link>
+            <a href="#about" className="hover:underline">About Us</a>
+            <a href="#how-it-works" className="hover:underline">How It Works</a>
+            <a href="#footer" className="hover:underline">Contact</a>
+          </div>
+        )}
+
+        {/* Right: Logo */}
         <div className="text-lg font-serif font-semibold tracking-wide">
           <Link to="/">
             <img
               src="/Images/logo.png"
-              alt="Logo"
-              className="w-12 h-auto object-contain"
+              alt="Auctora Logo"
+              className="w-20 h-auto object-contain"
             />
           </Link>
         </div>

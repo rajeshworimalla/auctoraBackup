@@ -14,7 +14,7 @@ const ExplorePage = () => {
   const [artworks, setArtworks] = useState([]);
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
 
   const [activeFilterTab, setActiveFilterTab] = useState('basic');
   const [selectedItem, setSelectedItem] = useState(null);
@@ -275,11 +275,10 @@ const ExplorePage = () => {
   // Filter section component
   const FilterSection = () => (
     <div
-    className={`transition-all duration-300 ease-in-out ${
-      showFilters ? 'block' : 'hidden'
-    } md:block`}
-  >
-  
+      className={`transition-all duration-300 ease-in-out ${
+        showFilters ? 'block' : 'hidden'
+      } md:block`}
+    >
       {/* Overlay for mobile to close filter panel when clicking outside */}
       {showFilters && (
         <div
@@ -298,9 +297,8 @@ const ExplorePage = () => {
               <FiX className="w-6 h-6" />
             </button>
           </div>
-
           {/* Filter Tabs */}
-          <div className="flex space-x-4 mb-6 border-b border-gray-200 overflow-x-auto">
+          <div className="flex space-x-4 mb-6">
             <button
               className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
                 activeFilterTab === 'basic'
@@ -332,9 +330,8 @@ const ExplorePage = () => {
               Sort & Order
             </button>
           </div>
-
           {/* Basic Filters */}
-          <div className={`space-y-4 transition-all duration-300 ${activeFilterTab === 'basic' ? 'block' : 'hidden'}`}>
+          <div className="space-y-4">
             <div className="relative">
               <input
                 type="text"
@@ -344,7 +341,6 @@ const ExplorePage = () => {
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               />
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="relative">
                 <select
@@ -360,7 +356,6 @@ const ExplorePage = () => {
                 </select>
                 <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </div>
-
               <div className="relative">
                 <select
                   className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
@@ -378,9 +373,8 @@ const ExplorePage = () => {
               </div>
             </div>
           </div>
-
           {/* Advanced Filters */}
-          <div className={`space-y-4 transition-all duration-300 ${activeFilterTab === 'advanced' ? 'block' : 'hidden'}`}>
+          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="relative">
                 <input
@@ -402,9 +396,8 @@ const ExplorePage = () => {
               </div>
             </div>
           </div>
-
           {/* Sort Options */}
-          <div className={`space-y-4 transition-all duration-300 ${activeFilterTab === 'sort' ? 'block' : 'hidden'}`}>
+          <div className="space-y-4">
             <div className="relative">
               <select
                 className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
@@ -425,7 +418,6 @@ const ExplorePage = () => {
               <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             </div>
           </div>
-
           {/* Filter Actions */}
           <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
             <button
