@@ -168,8 +168,13 @@ const Login = () => {
     }
 
     try {
-      console.log('Starting signup process...');
-      
+      console.log('Starting signup process with data:', {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone
+      });
+
       // First, check if user already exists
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
@@ -207,6 +212,8 @@ const Login = () => {
         }
       });
 
+      console.log('Auth signup response:', { authData, authError });
+
       if (authError) {
         console.error('Auth error details:', {
           message: authError.message,
@@ -221,6 +228,12 @@ const Login = () => {
         return;
       }
 
+      if (!authData?.user?.id) {
+        console.error('No user ID returned from auth signup');
+        setError('Failed to create user account. Please try again.');
+        return;
+      }
+
       console.log('Auth user created successfully:', authData);
 
       // Check if user already exists
@@ -232,7 +245,7 @@ const Login = () => {
 
       console.log('Attempting to create user record in database...');
 
-      console.log("Inserting user with values:", {
+      const userData = {
         User_Id: authData.user.id,
         Email: formData.email,
         Fname: formData.firstName,
@@ -241,25 +254,15 @@ const Login = () => {
         Username: `${formData.firstName} ${formData.lastName}`,
         Created_At: new Date().toISOString(),
         Updated_At: new Date().toISOString()
-      });
-      
+      };
+
+      console.log("Inserting user with values:", userData);
 
       // Create user in users table with correct column names
       const { error: userError } = await supabase
-  .from('users')
-  .insert([
-    {
-      User_Id: authData.user.id,
-      Email: formData.email,
-      Fname: formData.firstName,
-      Lname: formData.lastName,
-      Phone: formData.phone,
-      Username: `${formData.firstName} ${formData.lastName}`,
-      Created_At: new Date().toISOString(),
-      Updated_At: new Date().toISOString()
-    }
-  ]);
-
+        .from('users')
+        .insert([userData])
+        .select();
 
       if (userError) {
         console.error('User creation error details:', {
