@@ -83,8 +83,9 @@ const Navbar = ({ user }) => {
                 >
                   <img src={getAvatarUrl()} alt="Profile" className="w-full h-full object-cover" />
                 </button>
+                
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 transform origin-top-right transition-all duration-200 ease-out opacity-0 scale-95 translate-y-2 animate-in fade-in slide-in-from-top-2">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 transform origin-top-right transition-all duration-200 ease-out">
                     <Link 
                       to="/profile" 
                       className="block px-4 py-2 text-sm font-serif text-[#8B7355] hover:bg-[#D3CABE] hover:text-[#6B563D] transition-colors duration-150"
