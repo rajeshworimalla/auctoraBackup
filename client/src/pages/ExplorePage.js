@@ -6,6 +6,7 @@ import AuctionCard from '../components/AuctionCard';
 import ArtModal from '../components/ArtModal';
 import GalleryModal from '../components/GalleryModal';
 import UploadArtworkModal from '../components/UploadArtworkModal';
+import { Link } from 'react-router-dom';
 
 const ExplorePage = () => {
   const [showUpload, setShowUpload] = useState(false);
@@ -80,7 +81,8 @@ const ExplorePage = () => {
             *,
             artist_name
           )
-        `);
+        `)
+        .eq('Artwork.is_sold', false);
 
       // Apply filters
       if (filters.search) {
@@ -159,7 +161,8 @@ const ExplorePage = () => {
           *,
           Artwork (*)
         `)
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .gt('end_time', new Date().toISOString());
 
       // Apply filters
       if (filters.search) {
@@ -521,11 +524,7 @@ const ExplorePage = () => {
 
             <button
               onClick={() => setShowMyListings(!showMyListings)}
-              className={`inline-flex items-center px-4 py-2 rounded-lg shadow-sm transition-all duration-200 font-medium ${
-                showMyListings
-                  ? 'bg-[#8B7355] text-white hover:bg-[#6B563D]'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+              className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
             >
               {showMyListings ? 'Show All Listings' : 'Show My Active Listings'}
             </button>
@@ -562,7 +561,7 @@ const ExplorePage = () => {
         <FilterSection />
 
         {/* Content Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {activeTab === 'auctions' ? (
             auctions.length > 0 ? (
               auctions.map((auction) => (
@@ -573,8 +572,20 @@ const ExplorePage = () => {
                 />
               ))
             ) : (
-              <div className="col-span-full text-center py-12 text-gray-500">
-                No active auctions found
+              <div className="col-span-full text-center py-12">
+                {showMyListings ? (
+                  <div className="bg-white rounded-lg p-8 shadow-sm">
+                    <p className="text-gray-600 mb-4">You don't have any active listings.</p>
+                    <Link 
+                      to="/my-listings" 
+                      className="text-[#8B7355] hover:text-[#6B563D] font-medium"
+                    >
+                      View all your listings in your profile
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="text-gray-500">No active auctions found</div>
+                )}
               </div>
             )
           ) : (
@@ -587,8 +598,20 @@ const ExplorePage = () => {
                 />
               ))
             ) : (
-              <div className="col-span-full text-center py-12 text-gray-500">
-                No artworks found
+              <div className="col-span-full text-center py-12">
+                {showMyListings ? (
+                  <div className="bg-white rounded-lg p-8 shadow-sm">
+                    <p className="text-gray-600 mb-4">You don't have any active listings.</p>
+                    <Link 
+                      to="/my-listings" 
+                      className="text-[#8B7355] hover:text-[#6B563D] font-medium"
+                    >
+                      View all your listings in your profile
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="text-gray-500">No artworks found</div>
+                )}
               </div>
             )
           )}
