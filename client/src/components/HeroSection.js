@@ -161,33 +161,13 @@ const HeroSection = () => {
             </div>
           </div>
 
-          {/* Second Image (Couch) + How It Works Section */}
-          <div className="w-full h-[80%] flex flex-col md:flex-row items-stretch">
-            <div className="md:w-1/2 w-full h-full">
-              <img
-                src="/Images/frame.png"
-                alt="Frame"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            {/* How It Works Section */}
-            <div id="how-it-works" className="md:w-1/2 w-full flex flex-col justify-center items-center p-8 md:p-12 bg-[#D3CABE] border-l border-black">
-              <div className="max-w-xl space-y-8">
-                <div className="space-y-2">
-                  <span className="text-sm tracking-wider text-black/60 uppercase">Get Started</span>
-                  <h2 className="text-5xl mb-4 font-serif leading-tight">How It Works</h2>
-                  <div className="w-20 h-1 bg-black/20"></div>
-                </div>
-                <h4 className="text-xl font-medium text-black/80 tracking-wide">Your Guide to Bidding & Buying</h4>
-                <ul className="space-y-4 text-base font-light leading-relaxed list-disc list-inside">
-                  <li>Browse trending art and discover unique pieces.</li>
-                  <li>Register or log in to place bids or buy instantly.</li>
-                  <li>Participate in live auctions or purchase from the gallery.</li>
-                  <li>Track your bids, wins, and purchases in your profile.</li>
-                  <li>Enjoy secure transactions and fast delivery.</li>
-                </ul>
-              </div>
-            </div>
+          {/* Second Image (Couch) */}
+          <div className="w-full h-[80%]">
+            <img
+              src="/Images/frame.png"
+              alt="Frame"
+              className="w-full h-full object-contain"
+            />
           </div>
         </div>
       </div>
