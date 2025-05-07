@@ -131,7 +131,7 @@ const HeroSection = () => {
           />
         </div>
 
-        {/* Text + Button + Second Image */}
+        {/* Text + Button + Second Image + How It Works Section */}
         <div className="md:w-1/2 w-full flex flex-col">
           {/* Headline & CTA */}
           <div className="flex flex-col justify-center px-6 md:px-16 pt-20 pb-12">
@@ -141,21 +141,53 @@ const HeroSection = () => {
             <p className="text-sm md:text-base text-black font-light mb-10 max-w-md">
               Indulge in a world of creativity and sophistication. Our art auctions offer a blend of tradition and innovation, curated for art enthusiasts.
             </p>
-            <Link
-              to="/explore"
-              className="inline-block border border-black px-4 py-2 text-sm text-black hover:bg-black hover:text-white transition"
-            >
-              Explore Now
-            </Link>
+            <div className="flex flex-col md:flex-row gap-4">
+              <Link
+                to="/explore"
+                className="inline-block"
+              >
+                <button className="text-xl px-8 py-4 bg-gradient-to-r from-[#8B7355] to-[#D3CABE] text-white font-bold rounded-full shadow-lg hover:scale-105 hover:from-[#6B563D] transition-all duration-200">
+                  Explore Now
+                </button>
+              </Link>
+              <a
+                href="#who-we-are"
+                className="inline-block"
+              >
+                <button className="text-xl px-8 py-4 bg-gradient-to-r from-[#D3CABE] to-[#8B7355] text-white font-bold rounded-full shadow-lg hover:scale-105 hover:to-[#6B563D] transition-all duration-200">
+                  Meet Our Team
+                </button>
+              </a>
+            </div>
           </div>
 
-          {/* Second Image (Couch) */}
-          <div className="w-full h-[80%]">
-            <img
-              src="/Images/frame.png"
-              alt="Frame"
-              className="w-full h-full object-contain"
-            />
+          {/* Second Image (Couch) + How It Works Section */}
+          <div className="w-full h-[80%] flex flex-col md:flex-row items-stretch">
+            <div className="md:w-1/2 w-full h-full">
+              <img
+                src="/Images/frame.png"
+                alt="Frame"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            {/* How It Works Section */}
+            <div id="how-it-works" className="md:w-1/2 w-full flex flex-col justify-center items-center p-8 md:p-12 bg-[#D3CABE] border-l border-black">
+              <div className="max-w-xl space-y-8">
+                <div className="space-y-2">
+                  <span className="text-sm tracking-wider text-black/60 uppercase">Get Started</span>
+                  <h2 className="text-5xl mb-4 font-serif leading-tight">How It Works</h2>
+                  <div className="w-20 h-1 bg-black/20"></div>
+                </div>
+                <h4 className="text-xl font-medium text-black/80 tracking-wide">Your Guide to Bidding & Buying</h4>
+                <ul className="space-y-4 text-base font-light leading-relaxed list-disc list-inside">
+                  <li>Browse trending art and discover unique pieces.</li>
+                  <li>Register or log in to place bids or buy instantly.</li>
+                  <li>Participate in live auctions or purchase from the gallery.</li>
+                  <li>Track your bids, wins, and purchases in your profile.</li>
+                  <li>Enjoy secure transactions and fast delivery.</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -230,7 +262,7 @@ const HeroSection = () => {
       <section className="bg-[#D3CABE] text-black font-serif">
 
         {/* Section 1: About Us (Text Left, Image Right) */}
-        <div className="flex flex-col lg:flex-row h-[90vh]">
+        <div id="about" className="flex flex-col lg:flex-row h-[90vh]">
           <div className="lg:w-1/2 w-full flex flex-col justify-center items-center p-8 lg:p-20 bg-[#D3CABE]">
             <div className="max-w-xl space-y-8">
               <div className="space-y-2">
