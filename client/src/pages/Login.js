@@ -227,15 +227,13 @@ const Login = () => {
 
       console.log('Attempting to create user record in database...');
 
-      // Create user in users table with correct column names
-      const { error: userError } = await supabase.rpc('create_user_profile', {
-        p_user_id: authData.user.id,
-        p_email: formData.email,
-        p_fname: formData.firstName,
-        p_lname: formData.lastName,
-        p_phone: formData.phone,
-        p_username: `${formData.firstName} ${formData.lastName}`
-      });
+      // Create user in users table with minimal data first
+      const { error: userError } = await supabase
+        .from('users')
+        .insert({
+          User_Id: authData.user.id,
+          Email: formData.email
+        });
 
       if (userError) {
         console.error('User creation error details:', {
@@ -254,6 +252,23 @@ const Login = () => {
         
         setError(`Unable to create user account: ${userError.message}`);
         return;
+      }
+
+      // Update the user record with additional information
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          Fname: formData.firstName,
+          Lname: formData.lastName,
+          Phone: formData.phone,
+          Username: `${formData.firstName} ${formData.lastName}`,
+          Updated_At: new Date().toISOString()
+        })
+        .eq('User_Id', authData.user.id);
+
+      if (updateError) {
+        console.error('User update error:', updateError);
+        // Don't return here as the user is already created
       }
 
       console.log('User record created successfully');
