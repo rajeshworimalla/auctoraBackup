@@ -146,28 +146,41 @@ const HeroSection = () => {
                 to="/explore"
                 className="inline-block"
               >
-                <button className="text-xl px-8 py-4 bg-gradient-to-r from-[#8B7355] to-[#D3CABE] text-white font-bold rounded-full shadow-lg hover:scale-105 hover:from-[#6B563D] transition-all duration-200">
+                <button className="text-lg px-6 py-3 bg-[#8B7355] text-white font-medium rounded-md shadow hover:bg-[#6B563D] transition-all duration-200">
                   Explore Now
                 </button>
               </Link>
-              <a
-                href="#who-we-are"
-                className="inline-block"
-              >
-                <button className="text-xl px-8 py-4 bg-gradient-to-r from-[#D3CABE] to-[#8B7355] text-white font-bold rounded-full shadow-lg hover:scale-105 hover:to-[#6B563D] transition-all duration-200">
-                  Meet Our Team
-                </button>
-              </a>
             </div>
           </div>
 
-          {/* Second Image (Couch) */}
-          <div className="w-full h-[80%]">
-            <img
-              src="/Images/frame.png"
-              alt="Frame"
-              className="w-full h-full object-contain"
-            />
+          {/* Second Image (Couch) + How It Works Section */}
+          <div className="w-full h-[80%] flex flex-col md:flex-row items-stretch">
+            <div className="md:w-1/2 w-full h-full">
+              <img
+                src="/Images/frame.png"
+                alt="Frame"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            {/* How It Works Section */}
+            <div id="how-it-works" className="md:w-1/2 w-full flex flex-col justify-center items-center p-8 md:p-12 bg-[#D3CABE] border-l border-black">
+              <div className="max-w-xl space-y-8">
+                <div className="space-y-2">
+                  <span className="text-sm tracking-wider text-black/60 uppercase">Get Started</span>
+                  <h2 className="text-5xl mb-4 font-serif leading-tight">How It Works</h2>
+                  <div className="w-20 h-1 bg-black/20"></div>
+                </div>
+                <h4 className="text-xl font-medium text-black/80 tracking-wide">Your Guide to Bidding & Buying</h4>
+                <div className="space-y-4 text-base font-light leading-relaxed">
+                  <p>
+                    <strong>Auctions:</strong> Browse our live auctions, place bids on unique pieces, and watch as the excitement builds. The highest bidder takes home the art.
+                  </p>
+                  <p>
+                    <strong>Gallery:</strong> Explore our curated gallery for instant purchases. Find the perfect piece and add it to your collection with just a click.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

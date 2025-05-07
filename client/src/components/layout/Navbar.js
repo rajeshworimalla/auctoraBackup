@@ -119,17 +119,7 @@ const Navbar = ({ user }) => {
 
   return (
     <nav className="bg-[#D3CABE] text-black py-4 shadow-sm relative z-50">
-      <div className="w-full flex items-center px-4 sm:px-6">
-        {/* Logo */}
-        <div className="text-lg font-serif font-semibold tracking-wide mr-6">
-          <Link to="/">
-            <img
-              src="/Images/logo.png"
-              alt="Logo"
-              className="w-12 h-auto object-contain"
-            />
-          </Link>
-        </div>
+      <div className="w-full flex items-center justify-between px-4 sm:px-6">
         {/* Nav Links + Auth (all left) */}
         <div className="flex items-center space-x-8">
           <Link to="/" className="hover:underline">Home</Link>
@@ -141,6 +131,16 @@ const Navbar = ({ user }) => {
               Login / Signup
             </Link>
           )}
+        </div>
+        {/* Logo */}
+        <div className="text-lg font-serif font-semibold tracking-wide">
+          <Link to="/">
+            <img
+              src="/Images/logo.png"
+              alt="Logo"
+              className="w-12 h-auto object-contain"
+            />
+          </Link>
         </div>
       </div>
     </nav>
