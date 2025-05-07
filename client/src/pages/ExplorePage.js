@@ -138,10 +138,11 @@ const ExplorePage = () => {
       if (filters.maxPrice) {
         query = query.lte('starting_price', filters.maxPrice);
       }
+
       if (showMyListings && user) {
         query = query.eq('Artwork.owner_id', user.id);
       }
-
+      
       // Apply sorting
       switch (filters.sortBy) {
         case 'ending_soon':
