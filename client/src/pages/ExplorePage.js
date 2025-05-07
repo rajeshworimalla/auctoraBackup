@@ -15,6 +15,7 @@ const ExplorePage = () => {
   const [auctions, setAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [showMyListings, setShowMyListings] = useState(false);
 
   const [activeFilterTab, setActiveFilterTab] = useState('basic');
   const [selectedItem, setSelectedItem] = useState(null);
@@ -25,8 +26,7 @@ const ExplorePage = () => {
     minPrice: '',
     maxPrice: '',
     artist: '',
-    sortBy: 'newest',
-    showMyListings: false
+    sortBy: 'newest'
   });
 
   // Test Supabase connection
@@ -56,6 +56,15 @@ const ExplorePage = () => {
       fetchAuctions();
     }
   }, [activeTab]);
+
+  // Add effect to fetch data when showMyListings changes
+  useEffect(() => {
+    if (activeTab === 'gallery') {
+      fetchArtworks();
+    } else {
+      fetchAuctions();
+    }
+  }, [showMyListings]);
 
   const fetchArtworks = async () => {
     try {
@@ -89,7 +98,7 @@ const ExplorePage = () => {
       if (filters.maxPrice) {
         query = query.lte('Artwork.price', filters.maxPrice);
       }
-      if (filters.showMyListings && user) {
+      if (showMyListings && user) {
         query = query.eq('Artwork.owner_id', user.id);
       }
 
@@ -168,7 +177,7 @@ const ExplorePage = () => {
       if (filters.maxPrice) {
         query = query.lte('starting_price', filters.maxPrice);
       }
-      if (filters.showMyListings && user) {
+      if (showMyListings && user) {
         query = query.eq('Artwork.owner_id', user.id);
       }
 
@@ -277,8 +286,7 @@ const ExplorePage = () => {
       minPrice: '',
       maxPrice: '',
       artist: '',
-      sortBy: 'newest',
-      showMyListings: false
+      sortBy: 'newest'
     });
   };
 
@@ -424,19 +432,6 @@ const ExplorePage = () => {
                 <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </div>
             </div>
-            {/* Show My Listings Toggle */}
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="showMyListings"
-                checked={filters.showMyListings}
-                onChange={(e) => setFilters({ ...filters, showMyListings: e.target.checked })}
-                className="rounded border-gray-300 text-[#8B7355] focus:ring-[#8B7355]"
-              />
-              <label htmlFor="showMyListings" className="text-sm font-medium text-gray-700">
-                Show My Active Listings
-              </label>
-            </div>
             {/* Filter Actions */}
             <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
               <button
@@ -522,6 +517,17 @@ const ExplorePage = () => {
               className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
             >
               Upload Your Artwork
+            </button>
+
+            <button
+              onClick={() => setShowMyListings(!showMyListings)}
+              className={`inline-flex items-center px-4 py-2 rounded-lg shadow-sm transition-all duration-200 font-medium ${
+                showMyListings
+                  ? 'bg-[#8B7355] text-white hover:bg-[#6B563D]'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {showMyListings ? 'Show All Listings' : 'Show My Active Listings'}
             </button>
           </div>
         </div>
