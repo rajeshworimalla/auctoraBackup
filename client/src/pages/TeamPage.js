@@ -19,7 +19,7 @@ const TeamPage = () => (
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
       {teamMembers.map((member, idx) => (
-        <div key={idx} className="bg-white/80 rounded-lg shadow-md p-6 flex flex-col items-center border border-black/10 hover:shadow-lg transition-shadow duration-200">
+        <div key={idx} className={`bg-white/80 rounded-lg shadow-md p-6 flex flex-col items-center border border-black/10 hover:shadow-lg transition-shadow duration-200 ${idx >= 3 ? 'md:col-start-2' : ''}`}>
           <img
             src={member.img}
             alt={member.name}

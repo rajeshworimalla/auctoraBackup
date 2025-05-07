@@ -1,10 +1,36 @@
 // Updated Navbar layout with conditional rendering for logged-in users
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiShoppingCart, FiBell } from 'react-icons/fi';
+import { supabase } from '../../supabaseClient';
 
 const Navbar = ({ user }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const navigate = useNavigate();
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setProfileDropdownOpen(false);
+      navigate('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   const getAvatarUrl = () => {
     if (!user) return null;
@@ -50,7 +76,7 @@ const Navbar = ({ user }) => {
                 <FiShoppingCart size={22} />
               </Link>
               {/* Profile Dropdown */}
-              <div className="relative">
+              <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   className="ml-2 rounded-full w-9 h-9 overflow-hidden border border-gray-300"
@@ -58,16 +84,28 @@ const Navbar = ({ user }) => {
                   <img src={getAvatarUrl()} alt="Profile" className="w-full h-full object-cover" />
                 </button>
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                    <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit Profile</Link>
-                    <Link to="/purchases" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Purchases</Link>
-                    <Link to="/my-listings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Listings</Link>
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 transform origin-top-right transition-all duration-200 ease-out opacity-0 scale-95 translate-y-2 animate-in fade-in slide-in-from-top-2">
+                    <Link 
+                      to="/profile" 
+                      className="block px-4 py-2 text-sm font-serif text-[#8B7355] hover:bg-[#D3CABE] hover:text-[#6B563D] transition-colors duration-150"
+                    >
+                      Edit Profile
+                    </Link>
+                    <Link 
+                      to="/purchases" 
+                      className="block px-4 py-2 text-sm font-serif text-[#8B7355] hover:bg-[#D3CABE] hover:text-[#6B563D] transition-colors duration-150"
+                    >
+                      My Purchases
+                    </Link>
+                    <Link 
+                      to="/my-listings" 
+                      className="block px-4 py-2 text-sm font-serif text-[#8B7355] hover:bg-[#D3CABE] hover:text-[#6B563D] transition-colors duration-150"
+                    >
+                      My Listings
+                    </Link>
                     <button
-                      onClick={() => {
-                        setProfileDropdownOpen(false);
-                        window.location.href = '/logout';
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={handleSignOut}
+                      className="block w-full text-left px-4 py-2 text-sm font-serif text-[#8B7355] hover:bg-[#D3CABE] hover:text-[#6B563D] transition-colors duration-150"
                     >
                       Sign Out
                     </button>

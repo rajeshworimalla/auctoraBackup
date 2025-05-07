@@ -18,8 +18,9 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
   const [medium, setMedium] = useState('oil');
   const [dimensions, setDimensions] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-
 
   // Auction fields
   const [startingBid, setStartingBid] = useState('');
@@ -29,89 +30,155 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
 
   const handleFileUpload = async () => {
     if (!file) return null;
-    const filename = `${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage
-  .from('images')
-  .upload(`public/${filename}`, file);
+    try {
+      const filename = `${Date.now()}-${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('images')
+        .upload(`public/${filename}`, file);
 
-    if (error) {
-      alert('Upload failed');
-      return null;
+      if (error) {
+        throw error;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(data.path);
+      
+      return publicUrl;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw new Error('Failed to upload image. Please try again.');
     }
-    const { publicUrl } = supabase.storage.from('images').getPublicUrl(data.path);
-    return publicUrl;
   };
 
   const handleSubmit = async () => {
-    const user = await supabase.auth.getUser();
-    const owner_id = user.data.user?.id || null;
-    let finalImageUrl = imageUrl;
-  
-    if (uploadMode === 'file') {
-      const uploadedUrl = await handleFileUpload();
-      if (!uploadedUrl) return;
-      finalImageUrl = uploadedUrl;
-    }
-  
-    const { data: artworkData, error: artworkError } = await supabase
-      .from('Artwork')
-      .insert([{
-        title,
-        description,
-        price: parseFloat(price),
-        image_url: finalImageUrl,
-        category,
-        medium,
-        dimensions,
-        year: parseInt(year),
-        artist_name: artistName,
-        is_sold: false,
-        owner_id,
-      }])
-      .select();
-  
-    if (artworkError || !artworkData || !artworkData[0]) {
-      alert('Insert failed');
-      return;
-    }
-  
-    const artwork_id = artworkData[0].artwork_id;
-  
-    if (mode === 'gallery') {
-      await supabase.from('gallery').insert([{
-        artwork_id, featured: false, display_order: 1
-      }]);
-      setSuccessMessage('Uploaded successfully to gallery');
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccessMessage('');
+
+      // Validate required fields
+      if (!title || !description || !price || (!imageUrl && !file)) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      const user = await supabase.auth.getUser();
+      const owner_id = user.data.user?.id;
+      
+      if (!owner_id) {
+        throw new Error('You must be logged in to upload artwork');
+      }
+
+      let finalImageUrl = imageUrl;
+      if (uploadMode === 'file') {
+        finalImageUrl = await handleFileUpload();
+      }
+
+      const { data: artworkData, error: artworkError } = await supabase
+        .from('Artwork')
+        .insert([{
+          title,
+          description,
+          price: parseFloat(price),
+          image_url: finalImageUrl,
+          category,
+          medium,
+          dimensions,
+          year: parseInt(year),
+          artist_name: artistName,
+          is_sold: false,
+          owner_id,
+        }])
+        .select();
+
+      if (artworkError || !artworkData || !artworkData[0]) {
+        throw new Error('Failed to save artwork details');
+      }
+
+      const artwork_id = artworkData[0].artwork_id;
+
+      if (mode === 'gallery') {
+        const { error: galleryError } = await supabase
+          .from('gallery')
+          .insert([{
+            artwork_id,
+            featured: false,
+            display_order: 1
+          }]);
+
+        if (galleryError) {
+          throw new Error('Failed to add artwork to gallery');
+        }
+
+        setSuccessMessage('Artwork successfully uploaded to gallery');
+      } else if (mode === 'auction') {
+        const start_time = startDate ? new Date(startDate) : new Date();
+        const end_time = new Date(start_time.getTime() + auctionDuration * 24 * 60 * 60 * 1000);
+
+        const { error: auctionError } = await supabase
+          .from('auctions')
+          .insert([{
+            artwork_id,
+            starting_price: parseFloat(startingBid),
+            current_highest_bid: parseFloat(startingBid),
+            start_time: start_time.toISOString(),
+            end_time: end_time.toISOString(),
+            status: 'active',
+            reserve_price: parseFloat(reservePrice),
+          }]);
+
+        if (auctionError) {
+          throw new Error('Failed to create auction');
+        }
+
+        setSuccessMessage('Artwork successfully added to auction');
+      }
+
+      // Reset form after successful upload
+      setTitle('');
+      setDescription('');
+      setPrice('');
+      setImageUrl('');
+      setFile(null);
+      setArtistName('');
+      setCategory('painting');
+      setMedium('oil');
+      setDimensions('');
+      setYear(new Date().getFullYear());
+      setStartingBid('');
+      setReservePrice('');
+      setAuctionDuration(7);
+      setStartDate('');
+
+      // Close modal after delay
       setTimeout(() => {
-        setSuccessMessage('');
         onClose();
       }, 2000);
-    } else if (mode === 'auction') {
-      const start_time = startDate ? new Date(startDate) : new Date();
-      const end_time = new Date(start_time.getTime() + auctionDuration * 24 * 60 * 60 * 1000);
-  
-      await supabase.from('auctions').insert([{
-        artwork_id,
-        starting_price: parseFloat(startingBid),
-        current_highest_bid: parseFloat(startingBid),
-        start_time: start_time.toISOString(),
-        end_time: end_time.toISOString(),
-        status: 'active',
-        reserve_price: parseFloat(reservePrice),
-      }]);
-      setSuccessMessage('Uploaded successfully to auction');
-      setTimeout(() => {
-        setSuccessMessage('');
-        onClose();
-      }, 2000);
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
-  
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="fixed inset-0 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">Upload Your Artwork</h2>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
+            {successMessage}
+          </div>
+        )}
 
         <label className="block mb-2 text-sm font-medium">Title</label>
         <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full mb-3 border p-2 rounded" />
@@ -188,9 +255,21 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
           </div>
         )}
 
-        <div className="flex justify-end space-x-2">
-          <button onClick={onClose} className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400">Cancel</button>
-          <button onClick={handleSubmit} className="px-4 py-2 rounded bg-[#8B7355] text-white hover:bg-[#6B563D]">Submit</button>
+        <div className="flex justify-end space-x-2 mt-4">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+            disabled={loading}
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            className="px-4 py-2 rounded bg-[#8B7355] text-white hover:bg-[#6B563D] disabled:opacity-50"
+            disabled={loading}
+          >
+            {loading ? 'Uploading...' : 'Submit'}
+          </button>
         </div>
       </div>
     </Dialog>

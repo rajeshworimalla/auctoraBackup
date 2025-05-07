@@ -274,166 +274,165 @@ const ExplorePage = () => {
 
   // Filter section component
   const FilterSection = () => (
-   
-    <div className="transition-all duration-300 ease-in-out block">
-      {/* Overlay for mobile to close filter panel when clicking outside */}
-      {showFilters && (
+    showFilters && (
+      <div className="transition-all duration-300 ease-in-out block">
+        {/* Overlay for mobile to close filter panel when clicking outside */}
         <div
           className="fixed inset-0 bg-black bg-opacity-10 md:hidden z-40"
           onClick={() => setShowFilters(false)}
         />
-      )}
-      <div className="h-full md:h-auto overflow-y-auto md:overflow-visible relative z-50">
-        <div className="bg-white shadow-lg rounded-xl p-6 mb-6 border border-gray-100 max-w-4xl mx-auto md:mx-0">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-semibold text-gray-900">Filters</h3>
-            <button
-              onClick={() => setShowFilters(false)}
-              className="md:hidden p-2 hover:bg-gray-100 rounded-full"
-            >
-              <FiX className="w-6 h-6" />
-            </button>
-          </div>
-          {/* Filter Tabs */}
-          <div className="flex space-x-4 mb-6">
-            <button
-              className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
-                activeFilterTab === 'basic'
-                  ? 'border-[#8B7355] text-[#8B7355]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setActiveFilterTab('basic')}
-            >
-              Basic Filters
-            </button>
-            <button
-              className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
-                activeFilterTab === 'advanced'
-                  ? 'border-[#8B7355] text-[#8B7355]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setActiveFilterTab('advanced')}
-            >
-              Advanced Filters
-            </button>
-            <button
-              className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
-                activeFilterTab === 'sort'
-                  ? 'border-[#8B7355] text-[#8B7355]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setActiveFilterTab('sort')}
-            >
-              Sort & Order
-            </button>
-          </div>
-
-          {/* Basic Filters */}
-          <div className="space-y-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search artworks..."
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative">
-                <select
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
-                  value={filters.category}
-                  onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                >
-                  <option value="">All Categories</option>
-                  <option value="painting">Painting</option>
-                  <option value="sculpture">Sculpture</option>
-                  <option value="digital">Digital Art</option>
-                  <option value="photography">Photography</option>
-                </select>
-                <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              </div>
-              <div className="relative">
-                <select
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
-                  value={filters.medium}
-                  onChange={(e) => setFilters({ ...filters, medium: e.target.value })}
-                >
-                  <option value="">All Mediums</option>
-                  <option value="oil">Oil</option>
-                  <option value="acrylic">Acrylic</option>
-                  <option value="watercolor">Watercolor</option>
-                  <option value="digital">Digital</option>
-                  <option value="mixed">Mixed Media</option>
-                </select>
-                <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              </div>
-            </div>
-          </div>
-          {/* Advanced Filters */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="Min Price"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
-                  value={filters.minPrice}
-                  onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                />
-              </div>
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="Max Price"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
-                  value={filters.maxPrice}
-                  onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-          {/* Sort Options */}
-          <div className="space-y-4">
-            <div className="relative">
-              <select
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
-                value={filters.sortBy}
-                onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
+        <div className="h-full md:h-auto overflow-y-auto md:overflow-visible relative z-50">
+          <div className="bg-white shadow-lg rounded-xl p-6 mb-6 border border-gray-100 max-w-4xl mx-auto md:mx-0">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Filters</h3>
+              <button
+                onClick={() => setShowFilters(false)}
+                className="md:hidden p-2 hover:bg-gray-100 rounded-full"
               >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="price_high">Price: High to Low</option>
-                <option value="price_low">Price: Low to High</option>
-                {activeTab === 'auctions' && (
-                  <>
-                    <option value="ending_soon">Ending Soon</option>
-                    <option value="most_bids">Most Bids</option>
-                  </>
-                )}
-              </select>
-              <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <FiX className="w-6 h-6" />
+              </button>
             </div>
-          </div>
-          {/* Filter Actions */}
-          <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
-            <button
-              onClick={handleResetFilters}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-all duration-200"
-            >
-              Reset Filters
-            </button>
-            <button
-              onClick={handleApplyFilters}
-              className="px-6 py-2 bg-[#8B7355] text-white rounded-lg hover:bg-[#6B563D] transition-all duration-200"
-            >
-              Apply Filters
-            </button>
+            {/* Filter Tabs */}
+            <div className="flex space-x-4 mb-6">
+              <button
+                className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
+                  activeFilterTab === 'basic'
+                    ? 'border-[#8B7355] text-[#8B7355]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setActiveFilterTab('basic')}
+              >
+                Basic Filters
+              </button>
+              <button
+                className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
+                  activeFilterTab === 'advanced'
+                    ? 'border-[#8B7355] text-[#8B7355]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setActiveFilterTab('advanced')}
+              >
+                Advanced Filters
+              </button>
+              <button
+                className={`pb-3 px-4 text-sm font-medium transition-all duration-200 border-b-2 whitespace-nowrap ${
+                  activeFilterTab === 'sort'
+                    ? 'border-[#8B7355] text-[#8B7355]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setActiveFilterTab('sort')}
+              >
+                Sort & Order
+              </button>
+            </div>
+
+            {/* Basic Filters */}
+            <div className="space-y-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search artworks..."
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative">
+                  <select
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
+                    value={filters.category}
+                    onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                  >
+                    <option value="">All Categories</option>
+                    <option value="painting">Painting</option>
+                    <option value="sculpture">Sculpture</option>
+                    <option value="digital">Digital Art</option>
+                    <option value="photography">Photography</option>
+                  </select>
+                  <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+                <div className="relative">
+                  <select
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
+                    value={filters.medium}
+                    onChange={(e) => setFilters({ ...filters, medium: e.target.value })}
+                  >
+                    <option value="">All Mediums</option>
+                    <option value="oil">Oil</option>
+                    <option value="acrylic">Acrylic</option>
+                    <option value="watercolor">Watercolor</option>
+                    <option value="digital">Digital</option>
+                    <option value="mixed">Mixed Media</option>
+                  </select>
+                  <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+              </div>
+            </div>
+            {/* Advanced Filters */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="Min Price"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
+                    value={filters.minPrice}
+                    onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+                  />
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="Max Price"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent transition-all duration-200"
+                    value={filters.maxPrice}
+                    onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+            {/* Sort Options */}
+            <div className="space-y-4">
+              <div className="relative">
+                <select
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#D3CABE] focus:border-transparent appearance-none transition-all duration-200 pr-10"
+                  value={filters.sortBy}
+                  onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="price_high">Price: High to Low</option>
+                  <option value="price_low">Price: Low to High</option>
+                  {activeTab === 'auctions' && (
+                    <>
+                      <option value="ending_soon">Ending Soon</option>
+                      <option value="most_bids">Most Bids</option>
+                    </>
+                  )}
+                </select>
+                <FiChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
+            {/* Filter Actions */}
+            <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
+              <button
+                onClick={handleResetFilters}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-all duration-200"
+              >
+                Reset Filters
+              </button>
+              <button
+                onClick={handleApplyFilters}
+                className="px-6 py-2 bg-[#8B7355] text-white rounded-lg hover:bg-[#6B563D] transition-all duration-200"
+              >
+                Apply Filters
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    )
   );
 
   if (loading) {
