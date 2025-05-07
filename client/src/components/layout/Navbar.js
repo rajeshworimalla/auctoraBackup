@@ -79,10 +79,9 @@ const Navbar = ({ user }) => {
               <div 
                 className="relative" 
                 ref={dropdownRef}
-                onMouseEnter={() => setProfileDropdownOpen(true)}
-                onMouseLeave={() => setProfileDropdownOpen(false)}
               >
                 <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   className="ml-2 rounded-full w-9 h-9 overflow-hidden border border-gray-300"
                 >
                   <img src={getAvatarUrl()} alt="Profile" className="w-full h-full object-cover" />
@@ -92,28 +91,28 @@ const Navbar = ({ user }) => {
                   <div className="absolute right-0 mt-2 w-48 bg-[#D3CABE] rounded-md shadow-lg py-1 z-50 transform origin-top-right transition-all duration-200 ease-out">
                     <Link
                       to="/profile"
-                      className="block px-4 py-2 text-base font-serif text-black hover:bg-[#8B7355] hover:text-white transition-colors duration-150"
+                      className="block px-4 py-2 text-lg font-serif text-black hover:bg-[#8B7355] hover:text-white transition-colors duration-150"
                       onClick={() => setProfileDropdownOpen(false)}
                     >
                       Edit Profile
                     </Link>
                     <Link
                       to="/purchases"
-                      className="block px-4 py-2 text-base font-serif text-black hover:bg-[#8B7355] hover:text-white transition-colors duration-150"
+                      className="block px-4 py-2 text-lg font-serif text-black hover:bg-[#8B7355] hover:text-white transition-colors duration-150"
                       onClick={() => setProfileDropdownOpen(false)}
                     >
                       My Purchases
                     </Link>
                     <Link
                       to="/my-listings" 
-                      className="block px-4 py-2 text-base font-serif text-black hover:bg-[#8B7355] hover:text-white transition-colors duration-150"
+                      className="block px-4 py-2 text-lg font-serif text-black hover:bg-[#8B7355] hover:text-white transition-colors duration-150"
                       onClick={() => setProfileDropdownOpen(false)}
                     >
                       My Listings
                     </Link>
                     <button
                       onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2 text-base font-serif text-black hover:bg-[#8B7355] hover:text-white transition-colors duration-150"
+                      className="block w-full text-left px-4 py-2 text-lg font-serif text-black hover:bg-[#8B7355] hover:text-white transition-colors duration-150"
                     >
                       Sign Out
                     </button>
