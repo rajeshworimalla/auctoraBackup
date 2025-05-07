@@ -330,6 +330,7 @@ const ExplorePage = () => {
               Sort & Order
             </button>
           </div>
+
           {/* Basic Filters */}
           <div className="space-y-4">
             <div className="relative">

@@ -140,16 +140,16 @@ const HeroSection = () => {
               <h2 className="text-6xl font-serif mb-2">How It Works</h2>
               <div className="w-20 h-1 bg-black/20 mb-4"></div>
               <p className="text-base font-light font-serif">
-                <strong>Auctions:</strong> Join live auctions, place your bids, and win unique pieces.
+                <strong>Auctions</strong>: Join live auctions, place your bids, and win unique pieces.
               </p>
               <p className="text-base font-light font-serif">
-                <strong>Gallery:</strong> Prefer instant buys? Browse and purchase directly from our handpicked collections.
+                <strong>Gallery</strong>: Prefer instant buys? Browse and purchase directly from our handpicked collections.
               </p>
               <p className="text-base font-light font-serif">
-                <strong>Notifications:</strong> Stay updated with real-time alerts. Get notified when auctions are ending, new artworks are added, or bidding activity increases.
+                <strong>Notifications</strong>: Stay updated with real-time alerts. Get notified when auctions are ending, new artworks are added, or bidding activity increases.
               </p>
               <p className="text-base font-light font-serif">
-                <strong>Selling Art:</strong> Artists can easily list their work. Upload images, set a price, choose between auction or gallery format, and connect with buyers directly.
+                <strong>Selling Art</strong>: Artists can easily list their work. Upload images, set a price, choose between auction or gallery format, and connect with buyers directly.
               </p>
             </div>
           </div>
@@ -341,7 +341,7 @@ const HeroSection = () => {
               </div>
               <Link
                 to="/about"
-                className="inline-block border border-black px-4 py-2 text-sm hover:bg-black hover:text-white transition"
+                className="inline-block border-2 border-[#8B7355] px-6 py-3 text-lg text-white bg-[#8B7355] hover:bg-[#6B563D] hover:scale-105 hover:shadow-lg hover:shadow-[#8B7355] transition-all duration-300 font-serif text-center"
               >
                 Meet Our Team
               </Link>
