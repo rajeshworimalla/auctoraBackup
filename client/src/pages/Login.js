@@ -168,12 +168,18 @@ const Login = () => {
     }
 
     try {
+      console.log('Starting signup process...');
+      
       // First, check if user already exists
       const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('id')
         .eq('email', formData.email)
         .single();
+
+      if (checkError && !checkError.message.includes('No rows found')) {
+        console.error('Error checking existing user:', checkError);
+      }
 
       if (existingUser) {
         setError('An account with this email already exists. Please sign in instead.');
@@ -184,6 +190,7 @@ const Login = () => {
 
       // Get the current URL origin
       const siteUrl = window.location.origin;
+      console.log('Attempting to create auth user...');
 
       // Sign up the user with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -201,14 +208,20 @@ const Login = () => {
       });
 
       if (authError) {
-        console.error('Auth error:', authError);
+        console.error('Auth error details:', {
+          message: authError.message,
+          status: authError.status,
+          name: authError.name
+        });
         if (authError.message.includes('already registered')) {
           setError('An account with this email already exists. Please sign in instead.');
         } else {
-          setError('Unable to create account. Please try again later.');
+          setError(`Unable to create account: ${authError.message}`);
         }
         return;
       }
+
+      console.log('Auth user created successfully:', authData);
 
       // Check if user already exists
       if (authData?.user?.identities?.length === 0) {
@@ -216,6 +229,8 @@ const Login = () => {
         setIsSignUp(false);
         return;
       }
+
+      console.log('Attempting to create user record in database...');
 
       // Create user in users table
       const { error: userError } = await supabase
@@ -234,10 +249,17 @@ const Login = () => {
         ]);
 
       if (userError) {
-        console.error('User creation error:', userError);
-        setError('Unable to create user account. Please try again later.');
+        console.error('User creation error details:', {
+          message: userError.message,
+          details: userError.details,
+          hint: userError.hint,
+          code: userError.code
+        });
+        setError(`Unable to create user account: ${userError.message}`);
         return;
       }
+
+      console.log('User record created successfully');
 
       // If we get here, it's a successful new signup
       alert('Check your email for the confirmation link!');
@@ -251,8 +273,11 @@ const Login = () => {
       });
       setPasswordStrength({ score: 0, message: '' });
     } catch (error) {
-      console.error('Signup error:', error);
-      setError('Unable to create account. Please try again later.');
+      console.error('Unexpected signup error:', {
+        message: error.message,
+        stack: error.stack
+      });
+      setError(`Unable to create account: ${error.message}`);
     } finally {
       setLoading(false);
     }
