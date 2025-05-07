@@ -88,7 +88,7 @@ const Navbar = ({ user }) => {
                 </button>
 
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[#D3CABE] rounded-md shadow-lg py-1 z-50 transform origin-top-right transition-all duration-200 ease-out">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 transform origin-top-right transition-all duration-200 ease-out">
                     <Link
                       to="/profile"
                       className="block px-4 py-2 text-lg font-serif text-black hover:bg-[#8B7355] hover:text-white transition-colors duration-150"

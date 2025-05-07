@@ -71,79 +71,37 @@ const ExplorePage = () => {
     try {
       setLoading(true);
       setError(null);
-  
-      const { data: { user } } = await supabase.auth.getUser();
+
       let query = supabase
-        .from('gallery')
-        .select(`
-          *,
-          Artwork:artwork_id (
-            *,
-            artist_name
-          )
-        `)
-        .eq('Artwork.is_sold', false);
+        .from('Artwork')
+        .select('*')
+        .eq('is_sold', false);
 
       // Apply filters
-      if (filters.search) {
-        query = query.ilike('Artwork.title', `%${filters.search}%`);
-      }
-      if (filters.category) {
-        query = query.eq('Artwork.category', filters.category);
-      }
-      if (filters.medium) {
-        query = query.eq('Artwork.medium', filters.medium);
-      }
       if (filters.minPrice) {
-        query = query.gte('Artwork.price', filters.minPrice);
+        query = query.gte('price', filters.minPrice);
       }
       if (filters.maxPrice) {
-        query = query.lte('Artwork.price', filters.maxPrice);
+        query = query.lte('price', filters.maxPrice);
       }
-      if (showMyListings && user) {
-        query = query.eq('Artwork.owner_id', user.id);
+      if (filters.category) {
+        query = query.eq('category', filters.category);
       }
-
-      // Apply sorting
-      switch (filters.sortBy) {
-        case 'newest':
-          query = query.order('created_at', { ascending: false });
-          break;
-        case 'oldest':
-          query = query.order('created_at', { ascending: true });
-          break;
-        case 'price_high':
-          query = query.order('Artwork.price', { ascending: false });
-          break;
-        case 'price_low':
-          query = query.order('Artwork.price', { ascending: true });
-          break;
-        default:
-          query = query.order('display_order', { ascending: true });
+      if (filters.medium) {
+        query = query.eq('medium', filters.medium);
+      }
+      if (filters.showMyListings && user) {
+        query = query.eq('owner_id', user.id);
       }
 
       const { data, error } = await query;
-  
+
       if (error) throw error;
-  
-      const transformed = data.map(item => ({
-        ...item.Artwork,
-        gallery_id: item.gallery_id,
-        featured: item.featured,
-        display_order: item.display_order,
-        title: item.Artwork.title || 'Untitled',
-        description: item.Artwork.description || 'No description available',
-        image_url: item.Artwork.image_url || '/Images/placeholder-art.jpg',
-        price: item.Artwork.price || 0,
-        category: item.Artwork.category || 'Other',
-        medium: item.Artwork.medium || 'Mixed Media'
-      }));
-  
-      setArtworks(transformed);
-    } catch (err) {
-      console.error('Gallery fetch error:', err);
-      setError('Failed to fetch artworks. Please try again later.');
-      setArtworks([]);
+
+      setArtworks(data || []);
+    } catch (error) {
+      console.error('Error fetching artworks:', error);
+      setError('Failed to fetch artworks. Please try again.');
     } finally {
       setLoading(false);
     }

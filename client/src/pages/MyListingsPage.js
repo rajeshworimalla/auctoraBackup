@@ -6,6 +6,7 @@ const MyListingsPage = () => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('auctions');
 
   useEffect(() => {
     const fetchListings = async () => {
@@ -16,46 +17,52 @@ const MyListingsPage = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('Please log in to view your listings');
 
-        // Fetch gallery listings
-        const { data: gallery, error: galleryError } = await supabase
-          .from('gallery')
-          .select('*, Artwork(*)')
-          .eq('Artwork.owner_id', user.id);
+        if (activeTab === 'gallery') {
+          // Fetch gallery listings
+          const { data: gallery, error: galleryError } = await supabase
+            .from('Artwork')
+            .select('*')
+            .eq('owner_id', user.id)
+            .eq('is_sold', false);
 
-        if (galleryError) throw galleryError;
+          if (galleryError) throw galleryError;
 
-        // Fetch auction listings
-        const { data: auctions, error: auctionError } = await supabase
-          .from('auctions')
-          .select('*, Artwork(*)')
-          .eq('Artwork.owner_id', user.id);
+          const galleryCards = (gallery || []).map(item => ({
+            id: item.id,
+            type: 'Gallery',
+            title: item.title,
+            artist: item.artist_name,
+            image: item.image_url,
+            price: item.price,
+            status: item.is_sold ? 'Sold' : 'Active',
+            created_at: item.created_at,
+          }));
 
-        if (auctionError) throw auctionError;
+          setListings(galleryCards);
+        } else {
+          // Fetch auction listings
+          const { data: auctions, error: auctionError } = await supabase
+            .from('auctions')
+            .select('*, Artwork(*)')
+            .eq('Artwork.owner_id', user.id)
+            .eq('status', 'active')
+            .gt('end_time', new Date().toISOString());
 
-        // Combine and normalize
-        const galleryCards = (gallery || []).map(item => ({
-          id: item.id,
-          type: 'Gallery',
-          title: item.Artwork?.title,
-          artist: item.Artwork?.artist_name,
-          image: item.Artwork?.image_url,
-          price: item.Artwork?.price,
-          status: item.Artwork?.is_sold ? 'Sold' : 'Active',
-          created_at: item.Artwork?.created_at,
-        }));
+          if (auctionError) throw auctionError;
 
-        const auctionCards = (auctions || []).map(item => ({
-          id: item.id,
-          type: 'Auction',
-          title: item.Artwork?.title,
-          artist: item.Artwork?.artist_name,
-          image: item.Artwork?.image_url,
-          price: item.starting_price,
-          status: item.status,
-          created_at: item.created_at,
-        }));
+          const auctionCards = (auctions || []).map(item => ({
+            id: item.id,
+            type: 'Auction',
+            title: item.Artwork?.title,
+            artist: item.Artwork?.artist_name,
+            image: item.Artwork?.image_url,
+            price: item.starting_price,
+            status: item.status,
+            created_at: item.created_at,
+          }));
 
-        setListings([...galleryCards, ...auctionCards]);
+          setListings(auctionCards);
+        }
       } catch (error) {
         console.error('Error fetching listings:', error);
         setError(error.message);
@@ -65,7 +72,7 @@ const MyListingsPage = () => {
     };
 
     fetchListings();
-  }, []);
+  }, [activeTab]);
 
   if (loading) {
     return (
@@ -93,11 +100,39 @@ const MyListingsPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-serif font-bold text-[#8B7355] mb-8">My Listings</h1>
         
+        {/* Tab Switcher */}
+        <div className="flex space-x-4 mb-6">
+          <button
+            className={`px-6 py-3 rounded-lg font-medium text-lg transition-all duration-200 ${
+              activeTab === 'auctions'
+                ? 'bg-[#8B7355] text-white shadow-md'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+            onClick={() => setActiveTab('auctions')}
+          >
+            Live Auctions
+          </button>
+          <button
+            className={`px-6 py-3 rounded-lg font-medium text-lg transition-all duration-200 ${
+              activeTab === 'gallery'
+                ? 'bg-[#8B7355] text-white shadow-md'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+            onClick={() => setActiveTab('gallery')}
+          >
+            Gallery
+          </button>
+        </div>
+        
         {listings.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <FiImage className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-serif text-gray-600 mb-2">No Listings Yet</h2>
-            <p className="text-gray-500">You haven't listed any artworks or auctions yet.</p>
+            <h2 className="text-xl font-serif text-gray-600 mb-2">No Active Listings</h2>
+            <p className="text-gray-500">
+              {activeTab === 'auctions' 
+                ? "You don't have any active auctions at the moment."
+                : "You don't have any active gallery listings at the moment."}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
