@@ -1,135 +1,73 @@
 import React from 'react';
-import { FiGithub, FiLinkedin, FiMail } from 'react-icons/fi';
 
 const TeamPage = () => {
   const teamMembers = [
-    {
-      name: 'Rajesh Kumar',
-      role: 'Full Stack Developer',
-      image: '/Images/team/rajesh.jpg',
-      bio: 'Passionate about creating seamless user experiences and robust backend systems.',
-      github: 'https://github.com/rajeshkumar',
-      linkedin: 'https://linkedin.com/in/rajeshkumar',
-      email: 'rajesh.kumar@example.com'
+    { 
+      name: 'Rajeshwori Malla', 
+      img: '/Images/Raj.jpeg',
+      bio: 'If lost, return to GitHub. Probably left my sanity in the last commit.'
     },
-    {
-      name: 'Sarah Chen',
-      role: 'UI/UX Designer',
-      image: '/Images/team/sarah.jpg',
-      bio: 'Creative designer focused on intuitive and beautiful user interfaces.',
-      github: 'https://github.com/sarahchen',
-      linkedin: 'https://linkedin.com/in/sarahchen',
-      email: 'sarah.chen@example.com'
+    { 
+      name: 'Utsav Poudel', 
+      img: '/Images/Utsav.jpeg',
+      bio: 'Coded more than I slept. Debugged life one semicolon at a time.'
     },
-    {
-      name: 'Michael Rodriguez',
-      role: 'Backend Developer',
-      image: '/Images/team/michael.jpg',
-      bio: 'Specializing in scalable architecture and database optimization.',
-      github: 'https://github.com/michaelrodriguez',
-      linkedin: 'https://linkedin.com/in/michaelrodriguez',
-      email: 'michael.rodriguez@example.com'
+    { 
+      name: 'Smera Shrestha', 
+      img: '/Images/Smera.jpeg',
+      bio: 'Believed every bug had a deeper meaning. Still waiting on that breakthrough.'
     },
-    {
-      name: 'Emily Thompson',
-      role: 'Frontend Developer',
-      image: '/Images/team/emily.jpg',
-      bio: 'Expert in modern JavaScript frameworks and responsive design.',
-      github: 'https://github.com/emilythompson',
-      linkedin: 'https://linkedin.com/in/emilythompson',
-      email: 'emily.thompson@example.com'
+    { 
+      name: 'Mousam Bhandari', 
+      img: '/Images/Mousam.jpeg',
+      bio: 'Said "just one more push" and three hours later was still styling the button.'
     },
-    {
-      name: 'David Kim',
-      role: 'DevOps Engineer',
-      image: '/Images/team/david.jpg',
-      bio: 'Ensuring smooth deployment and optimal system performance.',
-      github: 'https://github.com/davidkim',
-      linkedin: 'https://linkedin.com/in/davidkim',
-      email: 'david.kim@example.com'
-    }
+    { 
+      name: 'Nima Lama', 
+      img: '/Images/Nima.jpeg',
+      bio: 'Built Auctora, broke it twice, fixed it with snacks and vibes.'
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-serif font-bold text-[#8B7355] mb-8 text-center">Our Team</h1>
-        
-        {/* First Row - 3 members */}
-        <div className="flex justify-center mb-8">
-          <div className="grid grid-cols-3 gap-8 max-w-5xl">
-            {teamMembers.slice(0, 3).map((member, index) => (
-              <div 
-                key={index} 
-                className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col"
-                style={{ height: '400px' }}
-              >
-                <div className="h-48 overflow-hidden">
-                  <img 
-                    src={member.image} 
-                    alt={member.name} 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-6 flex-grow flex flex-col">
-                  <h3 className="text-xl font-serif font-semibold text-gray-900 mb-1">{member.name}</h3>
-                  <p className="text-[#8B7355] font-medium mb-3">{member.role}</p>
-                  <p className="text-gray-600 mb-4 flex-grow">{member.bio}</p>
-                  <div className="flex space-x-4 mt-auto">
-                    <a href={member.github} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#8B7355]">
-                      <FiGithub size={20} />
-                    </a>
-                    <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#8B7355]">
-                      <FiLinkedin size={20} />
-                    </a>
-                    <a href={`mailto:${member.email}`} className="text-gray-600 hover:text-[#8B7355]">
-                      <FiMail size={20} />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Second Row - 2 members */}
-        <div className="flex justify-center">
-          <div className="grid grid-cols-2 gap-8 max-w-3xl">
-            {teamMembers.slice(3, 5).map((member, index) => (
-              <div 
-                key={index} 
-                className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1 flex flex-col"
-                style={{ height: '400px' }}
-              >
-                <div className="h-48 overflow-hidden">
-                  <img 
-                    src={member.image} 
-                    alt={member.name} 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-6 flex-grow flex flex-col">
-                  <h3 className="text-xl font-serif font-semibold text-gray-900 mb-1">{member.name}</h3>
-                  <p className="text-[#8B7355] font-medium mb-3">{member.role}</p>
-                  <p className="text-gray-600 mb-4 flex-grow">{member.bio}</p>
-                  <div className="flex space-x-4 mt-auto">
-                    <a href={member.github} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#8B7355]">
-                      <FiGithub size={20} />
-                    </a>
-                    <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-[#8B7355]">
-                      <FiLinkedin size={20} />
-                    </a>
-                    <a href={`mailto:${member.email}`} className="text-gray-600 hover:text-[#8B7355]">
-                      <FiMail size={20} />
-                    </a>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+    <section className="min-h-screen bg-[#D3CABE] py-8 px-4 md:px-16 font-serif">
+      <div className="max-w-5xl mx-auto text-center mb-8">
+        <h1 className="text-5xl md:text-6xl font-serif font-bold mb-4 text-black">Meet Our Team</h1>
+        <p className="text-lg md:text-xl text-black/70 font-light max-w-2xl mx-auto">
+          The creative minds and passionate builders behind Auctora. We blend art, code, and a love for innovation to bring you a unique auction experience.
+        </p>
       </div>
-    </div>
+      
+      {/* First Row - 3 members */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto mb-6">
+        {teamMembers.slice(0, 3).map((member, idx) => (
+          <div key={idx} className="bg-white/80 rounded-lg shadow-md p-6 flex flex-col items-center border border-black/10 hover:shadow-lg transition-shadow duration-200 h-[300px]">
+            <img 
+              src={member.img}
+              alt={member.name} 
+              className="w-24 h-24 object-cover rounded-full border-2 border-[#8B7355] mb-4 shadow-sm"
+            />
+            <h3 className="text-xl font-semibold text-black mb-2">{member.name}</h3>
+            <p className="text-gray-600 text-center italic">{member.bio}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Second Row - 2 members */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+        {teamMembers.slice(3, 5).map((member, idx) => (
+          <div key={idx} className="bg-white/80 rounded-lg shadow-md p-6 flex flex-col items-center border border-black/10 hover:shadow-lg transition-shadow duration-200 h-[300px]">
+            <img 
+              src={member.img}
+              alt={member.name} 
+              className="w-24 h-24 object-cover rounded-full border-2 border-[#8B7355] mb-4 shadow-sm"
+            />
+            <h3 className="text-xl font-semibold text-black mb-2">{member.name}</h3>
+            <p className="text-gray-600 text-center italic">{member.bio}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 };
 
