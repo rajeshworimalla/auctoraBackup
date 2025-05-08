@@ -217,13 +217,6 @@ const ArtModal = ({ isOpen, onClose, art }) => {
       // Get the auction ID and ensure it's a valid UUID
       const auctionId = art.auction_id;
       
-      console.log('Debug - Bid Data:', {
-        art: art,
-        auctionId: auctionId,
-        bidAmount: amount,
-        userId: user.id
-      });
-
       if (!auctionId) {
         throw new Error('No auction ID found');
       }
@@ -260,17 +253,33 @@ const ArtModal = ({ isOpen, onClose, art }) => {
         throw auctionError;
       }
 
-      // Update local state
+      // Fetch the user's username
+      const { data: userData, error: userError } = await supabase
+        .from('User')
+        .select('Username')
+        .eq('User_Id', user.id)
+        .single();
+
+      if (userError) {
+        console.error('Error fetching user data:', userError);
+      }
+
+      // Create new bid object with user data
       const newBid = {
         ...bidData[0],
-        user: { raw_user_meta_data: user.user_metadata }
+        user: {
+          display_name: userData?.Username || 'Anonymous'
+        }
       };
 
-      const updatedBids = [newBid, ...bids]
-        .sort((a, b) => b.amount - a.amount)
-        .slice(0, 3);
+      // Update local state with new bid
+      setBids(prevBids => {
+        const updatedBids = [newBid, ...prevBids]
+          .sort((a, b) => b.amount - a.amount)
+          .slice(0, 3);
+        return updatedBids;
+      });
 
-      setBids(updatedBids);
       setBidAmount('');
       alert('Bid placed successfully!');
       
