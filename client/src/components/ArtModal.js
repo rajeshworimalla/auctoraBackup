@@ -177,7 +177,8 @@ const ArtModal = ({ isOpen, onClose, art }) => {
   };
 
   // Submit bid logic
-  const handleBid = async () => {
+  const handleBid = async (e) => {
+    e.preventDefault();
     if (!user) {
       const confirmLogin = window.confirm('You need to be logged in to place a bid. Would you like to log in now?');
       if (confirmLogin) {
@@ -195,14 +196,14 @@ const ArtModal = ({ isOpen, onClose, art }) => {
 
     try {
       setLoading(true);
-      const bidAmount = parseFloat(bidAmount);
+      const amount = parseFloat(bidAmount);
       
       // Add validation for negative values and zero
-      if (isNaN(bidAmount) || bidAmount <= 0) {
+      if (isNaN(amount) || amount <= 0) {
         throw new Error('Bid amount must be greater than zero');
       }
       
-      if (bidAmount <= highestBid) {
+      if (amount <= highestBid) {
         throw new Error('Bid must be higher than the current highest bid');
       }
 
@@ -219,7 +220,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
       console.log('Debug - Bid Data:', {
         art: art,
         auctionId: auctionId,
-        bidAmount: bidAmount,
+        bidAmount: amount,
         userId: user.id
       });
 
@@ -233,7 +234,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
         .insert([
           {
             auction_id: auctionId,
-            amount: bidAmount,
+            amount: amount,
             bidder_id: user.id
           }
         ])
@@ -248,7 +249,7 @@ const ArtModal = ({ isOpen, onClose, art }) => {
       const { error: auctionError } = await supabase
         .from('auctions')
         .update({
-          current_highest_bid: bidAmount,
+          current_highest_bid: amount,
           highest_bidder_id: user.id,
           status: 'active'
         })

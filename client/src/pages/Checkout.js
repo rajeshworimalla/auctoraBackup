@@ -7,6 +7,7 @@ const Checkout = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [orderSuccess, setOrderSuccess] = useState(false);
 
   // Form states
   const [shippingInfo, setShippingInfo] = useState({
@@ -118,8 +119,7 @@ const Checkout = () => {
 
       if (orderError) throw orderError;
 
-      // Clear cart and redirect to success page
-      navigate('/purchases');
+      setOrderSuccess(true);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -165,6 +165,19 @@ const Checkout = () => {
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
             <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
+
+        {orderSuccess && (
+          <div className="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg shadow mb-8 text-center">
+            <h2 className="text-2xl font-bold text-green-700 mb-2">Order Placed Successfully!</h2>
+            <p className="text-green-700 mb-4">Thank you for your purchase. You can view your order status and history in your purchases.</p>
+            <button
+              onClick={() => navigate('/purchases')}
+              className="bg-[#8B7355] text-white px-6 py-2 rounded hover:bg-[#6B563D] transition-colors"
+            >
+              Show Purchases
+            </button>
           </div>
         )}
 
@@ -377,27 +390,38 @@ const Checkout = () => {
         )}
 
         {/* Step 3: Order Confirmation */}
-        {currentStep === 3 && (
-          <div className="bg-white p-8 rounded-2xl shadow-lg max-w-2xl mx-auto">
+        {!orderSuccess && currentStep === 3 && (
+          <div className="bg-white p-8 rounded-2xl shadow-lg">
             <h2 className="text-3xl font-bold mb-6 text-center text-[#8B7355]">Order Confirmation</h2>
+            
+            {/* Order Summary */}
             <div className="mb-8">
-              <h3 className="text-xl font-semibold mb-2">Shipping Information</h3>
+              <h3 className="text-xl font-semibold mb-4">Order Summary</h3>
               <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                {/* Add order summary here */}
+              </div>
+            </div>
+
+            {/* Shipping To */}
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold mb-2">Shipping To</h3>
+              <div className="bg-gray-50 rounded-lg p-4">
                 <p><span className="font-medium">Name:</span> {shippingInfo.fullName}</p>
                 <p><span className="font-medium">Address:</span> {shippingInfo.addressLine1} {shippingInfo.addressLine2}</p>
                 <p><span className="font-medium">City/State:</span> {shippingInfo.city}, {shippingInfo.state} {shippingInfo.postalCode}</p>
                 <p><span className="font-medium">Phone:</span> {shippingInfo.phoneNumber}</p>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Payment Information</h3>
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            </div>
+
+            {/* Payment Info */}
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold mb-2">Payment Info</h3>
+              <div className="bg-gray-50 rounded-lg p-4">
                 <p><span className="font-medium">Card:</span> **** **** **** {paymentInfo.cardNumber.slice(-4)}</p>
                 <p><span className="font-medium">Name:</span> {paymentInfo.cardHolderName}</p>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Order Summary</h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                {/* Add order summary here */}
-              </div>
             </div>
+
             <button
               onClick={handleOrderSubmit}
               disabled={loading}

@@ -67,8 +67,24 @@ const PurchasesPage = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch orders for the user
-    // setOrders(fetchedOrders);
+    const fetchOrders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*, order_items(*, artwork:artwork_id(title, image_url, price))')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        setOrders(data);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        setError(error.message);
+      }
+    };
+
+    fetchOrders();
   }, []);
 
   const activeOrders = orders.filter(order => order.status !== 'delivered');

@@ -80,6 +80,7 @@ const CartPage = () => {
       if (error) throw error;
 
       setCartItems(cartItems.filter(item => item.id !== itemId));
+      window.dispatchEvent(new Event('cart-updated'));
     } catch (error) {
       console.error('Error removing item:', error);
       alert('Failed to remove item. Please try again.');

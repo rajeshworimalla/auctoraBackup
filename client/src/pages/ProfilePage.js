@@ -156,7 +156,7 @@ const ProfilePage = () => {
               <div className="flex-shrink-0">
                 <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-[#8B7355] mx-auto bg-white">
                   <img
-                    src={getAvatarUrl(user)}
+                    src={editing ? selectedAvatar : getAvatarUrl(user)}
                     alt="Profile"
                     className="w-full h-full object-contain"
                   />

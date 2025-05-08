@@ -48,19 +48,21 @@ const Navbar = ({ user }) => {
   useEffect(() => {
     const fetchCartCount = async () => {
       if (user) {
-        const { data, error } = await supabase
+        const { count, error } = await supabase
           .from('cart_items')
-          .select('count')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (!error && data) {
-          setCartItemCount(data.count);
-        }
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        if (!error) setCartItemCount(count);
       }
     };
 
     fetchCartCount();
+
+    // Listen for custom event
+    const handler = () => fetchCartCount();
+    window.addEventListener('cart-updated', handler);
+
+    return () => window.removeEventListener('cart-updated', handler);
   }, [user]);
 
   const handleSignOut = async () => {
