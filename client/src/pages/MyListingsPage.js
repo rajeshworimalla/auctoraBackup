@@ -53,8 +53,7 @@ const MyListingsPage = () => {
               owner_id
             )
           `)
-          .eq('Artwork.owner_id', user.id)
-          .in('status', ['active', 'pending']);
+          .eq('Artwork.owner_id', user.id);
 
         if (auctionError) throw auctionError;
 
@@ -93,7 +92,12 @@ const MyListingsPage = () => {
             created_at: item.created_at
           }));
 
-        setListings([...galleryListings, ...auctionListings]);
+        // Filter listings based on active tab
+        const filteredListings = activeTab === 'auctions' 
+          ? auctionListings 
+          : galleryListings;
+
+        setListings(filteredListings);
       } catch (error) {
         console.error('Error fetching listings:', error);
         setError('Failed to fetch listings');
@@ -183,22 +187,27 @@ const MyListingsPage = () => {
                     }`}>
                       {item.type === 'gallery' ? 'Gallery' : 'Auction'}
                     </span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      item.status === 'Active' || item.status === 'active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {item.status}
-                    </span>
+                    {item.type === 'auction' && (
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        item.status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {item.status}
+                      </span>
+                    )}
                   </div>
                 </div>
+                
                 <div className="p-4">
                   <h3 className="text-lg font-serif font-semibold text-gray-900 mb-1">{item.title}</h3>
                   <p className="text-sm text-gray-600 mb-2">by {item.artist_name}</p>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center text-[#8B7355]">
                       <FiTag className="mr-1" />
-                      <span className="text-lg font-bold">${item.price}</span>
+                      <span className="text-lg font-bold">
+                        ${item.type === 'gallery' ? item.price : item.current_highest_bid || item.starting_price}
+                      </span>
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <FiClock className="mr-1" />

@@ -167,29 +167,11 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
   // Get highest bidder's username
   const highestBidder = topBids.length > 0 ? topBids[0]?.user?.display_name : null;
 
-  // Handle bid button click
-  const handleBidClick = () => {
-    if (!user) {
-      const confirmLogin = window.confirm('You need to be logged in to place a bid. Would you like to log in now?');
-      if (confirmLogin) {
-        // Store the current artwork details in sessionStorage
-        sessionStorage.setItem('pendingBid', JSON.stringify({
-          auctionId: art.id,
-          amount: bidAmount
-        }));
-        onClose(); // Close the modal
-        navigate('/login'); // Redirect to login page
-      }
-      return;
-    }
-
-    // If user is logged in, proceed with bid
-    handleBid();
-  };
-
   // Submit bid logic
   const handleBid = async () => {
     try {
+      console.log('Starting bid process...', { art, bidAmount });
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Please log in to place a bid');
@@ -204,6 +186,7 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
 
       // Get the current highest bid or starting price
       const currentHighestBid = art.current_highest_bid || art.starting_price || 0;
+      console.log('Current highest bid:', currentHighestBid);
       
       if (bidAmountNum <= currentHighestBid) {
         toast.error(`Your bid must be higher than $${currentHighestBid}`);
@@ -217,12 +200,16 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
 
       setLoading(true);
 
+      // Get the correct auction_id
+      const auctionId = art.auction_id;
+      console.log('Using auction_id:', auctionId);
+
       // Insert the bid
       const { data: bidData, error: bidError } = await supabase
         .from('bids')
         .insert([
           {
-            auction_id: art.auction_id,
+            auction_id: auctionId,
             bidder_id: user.id,
             amount: bidAmountNum,
             bid_time: new Date().toISOString()
@@ -236,19 +223,23 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
         throw bidError;
       }
 
-      // Update the auction's highest bid
+      console.log('Bid inserted successfully:', bidData);
+
+      // Update the auction's status and end_time if needed
       const { error: updateError } = await supabase
         .from('auctions')
         .update({ 
-          current_highest_bid: bidAmountNum,
-          highest_bidder_id: user.id
+          status: 'active',
+          updated_at: new Date().toISOString()
         })
-        .eq('auction_id', art.auction_id);
+        .eq('auction_id', auctionId);
 
       if (updateError) {
         console.error('Update error:', updateError);
         throw updateError;
       }
+
+      console.log('Auction updated successfully');
 
       // Get the user's username
       const { data: userData } = await supabase
@@ -265,6 +256,8 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
         }
       };
 
+      console.log('New bid object created:', newBid);
+
       // Update local state immediately
       setBids(prevBids => [newBid, ...prevBids]);
       setCurrentBid(bidAmountNum);
@@ -273,13 +266,37 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
       toast.success('Bid placed successfully!');
       
       // Update the parent component
-      onBidUpdate(art.auction_id, bidAmountNum);
+      if (onBidUpdate) {
+        onBidUpdate(auctionId, bidAmountNum);
+      }
     } catch (error) {
       console.error('Error placing bid:', error);
       toast.error('Failed to place bid. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle bid button click
+  const handleBidClick = () => {
+    console.log('Bid button clicked', { user, art, bidAmount });
+    
+    if (!user) {
+      const confirmLogin = window.confirm('You need to be logged in to place a bid. Would you like to log in now?');
+      if (confirmLogin) {
+        // Store the current artwork details in sessionStorage
+        sessionStorage.setItem('pendingBid', JSON.stringify({
+          auctionId: art.auction_id,
+          amount: bidAmount
+        }));
+        onClose(); // Close the modal
+        navigate('/login'); // Redirect to login page
+      }
+      return;
+    }
+
+    // If user is logged in, proceed with bid
+    handleBid();
   };
 
   // Reset bids when modal closes
