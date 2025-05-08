@@ -26,7 +26,7 @@ const PurchasesPage = () => {
         // Fetch gallery purchases
         const { data: gallery, error: galleryError } = await supabase
           .from('gallery_purchases')
-          .select('*, Artwork(*)')
+          .select('*, artwork:artwork_id(*)')
           .eq('buyer_id', user.id);
 
         if (galleryError) throw galleryError;
@@ -34,7 +34,7 @@ const PurchasesPage = () => {
         // Fetch auction wins
         const { data: auctions, error: auctionError } = await supabase
           .from('auction_wins')
-          .select('*, auctions(*, Artwork(*))')
+          .select('*, auction:auction_id(*, artwork:artwork_id(*))')
           .eq('winner_id', user.id);
 
         if (auctionError) throw auctionError;
@@ -43,19 +43,19 @@ const PurchasesPage = () => {
         const galleryCards = (gallery || []).map(item => ({
           id: item.id,
           type: 'Gallery',
-          title: item.Artwork?.title,
-          artist: item.Artwork?.artist_name,
-          image: item.Artwork?.image_url,
-          price: item.Artwork?.price,
+          title: item.artwork?.title,
+          artist: item.artwork?.artist_name,
+          image: item.artwork?.image_url,
+          price: item.artwork?.price,
           date: item.purchased_at,
         }));
 
         const auctionCards = (auctions || []).map(item => ({
           id: item.id,
           type: 'Auction',
-          title: item.auctions?.Artwork?.title,
-          artist: item.auctions?.Artwork?.artist_name,
-          image: item.auctions?.Artwork?.image_url,
+          title: item.auction?.artwork?.title,
+          artist: item.auction?.artwork?.artist_name,
+          image: item.auction?.artwork?.image_url,
           price: item.final_price,
           date: item.won_at,
         }));
@@ -172,6 +172,64 @@ const PurchasesPage = () => {
     <div className="min-h-screen bg-[#F5F5F5] p-6">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-serif font-bold text-gray-900 mb-8">My Purchases</h1>
+
+        {/* Gallery Purchases */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">Gallery Purchases</h2>
+          {purchases.filter(p => p.type === 'Gallery').length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {purchases.filter(p => p.type === 'Gallery').map(purchase => (
+                <div key={purchase.id} className="bg-white rounded-lg shadow-sm p-6">
+                  <img 
+                    src={purchase.image || '/Images/placeholder-art.jpg'} 
+                    alt={purchase.title} 
+                    className="w-full h-48 object-cover rounded mb-4"
+                  />
+                  <h3 className="font-medium text-lg">{purchase.title}</h3>
+                  <p className="text-sm text-gray-600">by {purchase.artist}</p>
+                  <p className="text-sm text-gray-600">Price: ${purchase.price}</p>
+                  <p className="text-sm text-gray-600">Purchased on: {new Date(purchase.date).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+              <p className="text-gray-600 mb-4">You haven't made any gallery purchases yet.</p>
+              <Link to="/explore" className="text-[#8B7355] hover:text-[#6B563D] font-medium">
+                Browse Gallery
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Auction Wins */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">Auction Wins</h2>
+          {purchases.filter(p => p.type === 'Auction').length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {purchases.filter(p => p.type === 'Auction').map(purchase => (
+                <div key={purchase.id} className="bg-white rounded-lg shadow-sm p-6">
+                  <img 
+                    src={purchase.image || '/Images/placeholder-art.jpg'} 
+                    alt={purchase.title} 
+                    className="w-full h-48 object-cover rounded mb-4"
+                  />
+                  <h3 className="font-medium text-lg">{purchase.title}</h3>
+                  <p className="text-sm text-gray-600">by {purchase.artist}</p>
+                  <p className="text-sm text-gray-600">Winning Bid: ${purchase.price}</p>
+                  <p className="text-sm text-gray-600">Won on: {new Date(purchase.date).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+              <p className="text-gray-600 mb-4">You haven't won any auctions yet.</p>
+              <Link to="/auctions" className="text-[#8B7355] hover:text-[#6B563D] font-medium">
+                View Auctions
+              </Link>
+            </div>
+          )}
+        </div>
 
         {/* Active Orders */}
         <div className="mb-12">

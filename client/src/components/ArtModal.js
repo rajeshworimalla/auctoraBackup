@@ -185,11 +185,6 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
         return;
       }
 
-      if (user.id === art.owner_id) {
-        toast.error('You cannot bid on your own auction');
-        return;
-      }
-
       setLoading(true);
 
       // Get the correct auction_id
@@ -215,6 +210,12 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
         setLoading(false);
         return;
       }
+
+      // Update the auction's current_highest_bid
+      await supabase
+        .from('auctions')
+        .update({ current_highest_bid: bidAmountNum })
+        .eq('auction_id', auctionId);
 
       // Get the user's username from users table
       const { data: userData, error: userError } = await supabase
