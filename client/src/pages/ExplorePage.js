@@ -82,63 +82,37 @@ const ExplorePage = () => {
       setLoading(true);
       setError(null);
 
-      // 1. Get artwork_ids in active/pending auctions
-      const { data: auctioned, error: auctionedError } = await supabase
-        .from('auctions')
-        .select('artwork_id')
-        .in('status', ['active', 'pending']);
+      console.log('Starting to fetch gallery items...');
 
-      if (auctionedError) {
-        console.error('Error fetching auctioned artworks:', auctionedError);
-        throw auctionedError;
-      }
-
-      console.log('Auctioned artworks:', auctioned);
-
-      const auctionedIds = (auctioned || []).map(a => a.artwork_id);
-      console.log('Auctioned IDs:', auctionedIds);
-
-      // 2. Fetch gallery items not in auction
-      let query = supabase
+      // Simple query to fetch all gallery items
+      const { data, error } = await supabase
         .from('gallery')
-        .select('*, Artwork:artwork_id(*)');
+        .select('*');
 
-      // Apply filters
-      if (filters.minPrice) {
-        query = query.gte('Artwork.price', filters.minPrice);
-      }
-      if (filters.maxPrice) {
-        query = query.lte('Artwork.price', filters.maxPrice);
-      }
-      if (filters.category) {
-        query = query.eq('Artwork.category', filters.category);
-      }
-      if (filters.medium) {
-        query = query.eq('Artwork.medium', filters.medium);
-      }
-      if (showMyListings && user) {
-        query = query.eq('Artwork.owner_id', user.id);
-      }
-      if (auctionedIds.length > 0) {
-        query = query.not('artwork_id', 'in.(' + auctionedIds.join(',') + ')');
-      }
-      
-
-      console.log('Executing gallery query...');
-      const { data, error } = await query;
+      console.log('Raw gallery data:', data);
       
       if (error) {
         console.error('Error in gallery query:', error);
         throw error;
       }
 
-      console.log('Gallery query result:', data);
+      // Now fetch the artwork details
+      const artworkIds = data.map(item => item.artwork_id);
+      console.log('Artwork IDs:', artworkIds);
 
-      // Map to artwork objects for rendering
-      const mappedArtworks = (data || []).map(g => g.Artwork);
-      console.log('Mapped artworks:', mappedArtworks);
-      
-      setArtworks(mappedArtworks);
+      const { data: artworkData, error: artworkError } = await supabase
+        .from('Artwork')
+        .select('*')
+        .in('artwork_id', artworkIds);
+
+      console.log('Artwork data:', artworkData);
+
+      if (artworkError) {
+        console.error('Error fetching artwork details:', artworkError);
+        throw artworkError;
+      }
+
+      setArtworks(artworkData || []);
     } catch (error) {
       console.error('Error fetching artworks:', error);
       setError('Failed to fetch artworks. Please try again.');
