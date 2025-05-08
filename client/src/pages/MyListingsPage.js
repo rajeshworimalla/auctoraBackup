@@ -20,7 +20,7 @@ const MyListingsPage = () => {
           .from('gallery')
           .select(`
             *,
-            Artwork:artwork_id (
+            "Artwork":artwork_id (
               artwork_id,
               title,
               description,
@@ -32,7 +32,7 @@ const MyListingsPage = () => {
               owner_id
             )
           `)
-          .eq('Artwork.owner_id', user.id);
+          .eq('"Artwork".owner_id', user.id);
 
         if (galleryError) throw galleryError;
 
@@ -41,7 +41,7 @@ const MyListingsPage = () => {
           .from('auctions')
           .select(`
             *,
-            Artwork:artwork_id (
+            "Artwork":artwork_id (
               artwork_id,
               title,
               description,
@@ -53,9 +53,13 @@ const MyListingsPage = () => {
               owner_id
             )
           `)
-          .eq('Artwork.owner_id', user.id);
+          .eq('"Artwork".owner_id', user.id);
 
         if (auctionError) throw auctionError;
+
+        // Debug log the raw data
+        console.log('galleryData:', galleryData);
+        console.log('auctionData:', auctionData);
 
         // Transform gallery data
         const galleryListings = galleryData
