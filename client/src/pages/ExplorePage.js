@@ -93,7 +93,7 @@ const ExplorePage = () => {
       // 2. Fetch gallery items not in auction
       let query = supabase
         .from('gallery')
-        .select('*, Artwork(*)');
+        .select('*, Artwork:artwork_id(*)');
 
       // Apply filters
       if (filters.minPrice) {

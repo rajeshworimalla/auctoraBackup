@@ -5,9 +5,11 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
     "aos": "^2.3.4",
+    "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "framer-motion": "^10.18.0",
     "mysql2": "^3.14.0",
+    "node-fetch": "^3.3.2",
     "pg": "^8.14.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -19,5 +21,18 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
-  }
+  },
+  "description": "An elegant online platform where users can showcase, explore, and bid on artwork.  \r Live soon on **Render** 🚀",
+  "main": "delete_all_users.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rajeshworimalla/auctoraBackup.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rajeshworimalla/auctoraBackup/issues"
+  },
+  "homepage": "https://github.com/rajeshworimalla/auctoraBackup#readme"
 }
