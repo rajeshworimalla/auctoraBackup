@@ -202,8 +202,11 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
         return;
       }
 
-      if (bidAmountNum <= currentBid) {
-        toast.error('Your bid must be higher than the current highest bid');
+      // Get the current highest bid or starting price
+      const currentHighestBid = art.current_highest_bid || art.starting_price || 0;
+      
+      if (bidAmountNum <= currentHighestBid) {
+        toast.error(`Your bid must be higher than $${currentHighestBid}`);
         return;
       }
 
@@ -228,15 +231,24 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
         .select()
         .single();
 
-      if (bidError) throw bidError;
+      if (bidError) {
+        console.error('Bid error:', bidError);
+        throw bidError;
+      }
 
       // Update the auction's highest bid
       const { error: updateError } = await supabase
         .from('auctions')
-        .update({ current_highest_bid: bidAmountNum })
+        .update({ 
+          current_highest_bid: bidAmountNum,
+          highest_bidder_id: user.id
+        })
         .eq('auction_id', art.auction_id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Update error:', updateError);
+        throw updateError;
+      }
 
       // Get the user's username
       const { data: userData } = await supabase
@@ -377,7 +389,7 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
         {/* Bid Input */}
         {timeLeft?.expired ? (
           <p className="text-red-500 mb-2">Auction ended</p>
-        ) : user && user.id === art.artwork?.owner_id ? (
+        ) : user && user.id === art.owner_id ? (
           <div className="text-[#8B7355] font-serif text-center py-4">
             This is your own auction
           </div>
@@ -400,9 +412,13 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
                 step="0.01"
               />
               <button
-                onClick={handleBid}
-                disabled={loading}
-                className="bg-[#8B7355] text-white px-4 py-2 rounded hover:bg-[#6B563D] transition-colors duration-200"
+                onClick={handleBidClick}
+                disabled={loading || !bidAmount}
+                className={`px-4 py-2 rounded transition-colors duration-200 ${
+                  loading || !bidAmount
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-[#8B7355] text-white hover:bg-[#6B563D]'
+                }`}
               >
                 {loading ? 'Placing Bid...' : 'Place Bid'}
               </button>
