@@ -123,6 +123,7 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
           }]);
 
         if (galleryError) {
+          console.log('Gallery Insert Error:', galleryError);
           throw new Error('Failed to add artwork to gallery');
         }
 
