@@ -9,6 +9,8 @@ const PurchasesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [activeOrders, setActiveOrders] = useState([]);
+  const [pastOrders, setPastOrders] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
 
@@ -132,7 +134,7 @@ const PurchasesPage = () => {
           status: 'delivered',
           updated_at: new Date().toISOString()
         })
-        .eq('id', orderId);
+        .eq('order_id', orderId);
 
       if (error) throw error;
 
