@@ -13,6 +13,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import PurchasesPage from './pages/PurchasesPage';
 import MyListingsPage from './pages/MyListingsPage';
 import TeamPage from './pages/TeamPage';
+import Checkout from './pages/Checkout';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -54,6 +55,7 @@ function App() {
             <Route path="/notifications" element={user ? <NotificationsPage user={user} /> : <Navigate to="/login" />} />
             <Route path="/purchases" element={<PurchasesPage />} />
             <Route path="/my-listings" element={<MyListingsPage />} />
+            <Route path="/checkout" element={<Checkout />} />
           </Routes>
         </main>
         <Footer />

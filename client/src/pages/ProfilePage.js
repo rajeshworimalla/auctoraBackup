@@ -20,6 +20,11 @@ const avatarOptions = [
 
 const defaultAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
 
+const getAvatarUrl = (user) => {
+  if (!user) return 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+  return user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`;
+};
+
 const ProfilePage = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -151,7 +156,7 @@ const ProfilePage = () => {
               <div className="flex-shrink-0">
                 <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-[#8B7355] mx-auto bg-white">
                   <img
-                    src={selectedAvatar}
+                    src={getAvatarUrl(user)}
                     alt="Profile"
                     className="w-full h-full object-contain"
                   />

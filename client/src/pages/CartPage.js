@@ -93,8 +93,7 @@ const CartPage = () => {
   };
 
   const handleCheckout = () => {
-    // TODO: Implement checkout logic
-    alert('Checkout functionality coming soon!');
+    navigate('/checkout');
   };
 
   if (loading) {
