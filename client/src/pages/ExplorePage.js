@@ -87,21 +87,26 @@ const ExplorePage = () => {
   
       // Correct join: gallery.artwork_id → Artwork.artwork_id
       let query = supabase
-        .from('gallery')
-        .select(`
-          *,
-          Artwork:artwork_id (
-            artwork_id,
-            title,
-            price,
-            medium,
-            category,
-            image_url,
-            owner_id,
-            artist_name,
-            description
-          )
-        `);
+  .from('gallery')
+  .select(`
+    gallery_id,
+    artwork_id,
+    featured,
+    display_order,
+    created_at,
+    Artwork:artwork_id (
+      artwork_id,
+      title,
+      price,
+      medium,
+      category,
+      image_url,
+      owner_id,
+      artist_name,
+      description
+    )
+  `);
+
   
       // Apply filters
       if (filters.search) {
