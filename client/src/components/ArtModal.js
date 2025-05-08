@@ -63,7 +63,6 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
   const fetchBids = async () => {
     try {
       const auctionId = art?.auction_id || art?.id;
-      console.log('[ArtModal] fetchBids called. auctionId:', auctionId);
       if (!auctionId) {
         console.error('[ArtModal] No auction ID found', art);
         return;
@@ -73,7 +72,7 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
         .from('bids')
         .select(`
           *,
-          User:bidder_id (
+          users:bidder_id (
             Username
           )
         `)
@@ -86,17 +85,14 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
         return;
       }
 
-      console.log('Fetched bids:', bidData);
-
       // Transform bids to include username
       const enrichedBids = bidData.map(bid => ({
         ...bid,
         user: {
-          display_name: bid.User?.Username || 'Anonymous'
+          display_name: bid.users?.Username || 'Anonymous'
         }
       }));
 
-      console.log('Final enriched bids:', enrichedBids);
       setBids(enrichedBids || []);
     } catch (err) {
       console.error('[ArtModal] Error in fetchBids:', err);
@@ -170,8 +166,6 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
   // Submit bid logic
   const handleBid = async () => {
     try {
-      console.log('Starting bid process...', { art, bidAmount });
-      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Please log in to place a bid');
@@ -186,8 +180,6 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
 
       // Get the current highest bid or starting price
       const currentHighestBid = art.current_highest_bid || art.starting_price || 0;
-      console.log('Current highest bid:', currentHighestBid);
-      
       if (bidAmountNum <= currentHighestBid) {
         toast.error(`Your bid must be higher than $${currentHighestBid}`);
         return;
@@ -202,9 +194,8 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
 
       // Get the correct auction_id
       const auctionId = art.auction_id;
-      console.log('Using auction_id:', auctionId);
 
-      // Insert the bid
+      // Insert the bid (use created_at)
       const { data: bidData, error: bidError } = await supabase
         .from('bids')
         .insert([
@@ -212,7 +203,7 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
             auction_id: auctionId,
             bidder_id: user.id,
             amount: bidAmountNum,
-            bid_time: new Date().toISOString()
+            created_at: new Date().toISOString()
           }
         ])
         .select()
@@ -220,33 +211,20 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
 
       if (bidError) {
         console.error('Bid error:', bidError);
-        throw bidError;
+        toast.error('Failed to place bid. Please try again.');
+        setLoading(false);
+        return;
       }
 
-      console.log('Bid inserted successfully:', bidData);
-
-      // Update the auction's status and end_time if needed
-      const { error: updateError } = await supabase
-        .from('auctions')
-        .update({ 
-          status: 'active',
-          updated_at: new Date().toISOString()
-        })
-        .eq('auction_id', auctionId);
-
-      if (updateError) {
-        console.error('Update error:', updateError);
-        throw updateError;
-      }
-
-      console.log('Auction updated successfully');
-
-      // Get the user's username
-      const { data: userData } = await supabase
-        .from('User')
+      // Get the user's username from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
         .select('Username')
         .eq('id', user.id)
         .single();
+      if (userError) {
+        console.error('User fetch error:', userError);
+      }
 
       // Create a new bid object with the username
       const newBid = {
@@ -256,16 +234,11 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
         }
       };
 
-      console.log('New bid object created:', newBid);
-
-      // Update local state immediately
       setBids(prevBids => [newBid, ...prevBids]);
       setCurrentBid(bidAmountNum);
       setBidCount(prev => prev + 1);
       setBidAmount('');
       toast.success('Bid placed successfully!');
-      
-      // Update the parent component
       if (onBidUpdate) {
         onBidUpdate(auctionId, bidAmountNum);
       }
