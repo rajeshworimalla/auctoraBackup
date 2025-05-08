@@ -1,0 +1,422 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
+
+const Checkout = () => {
+  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Form states
+  const [shippingInfo, setShippingInfo] = useState({
+    fullName: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: 'USA',
+    phoneNumber: ''
+  });
+
+  const [paymentInfo, setPaymentInfo] = useState({
+    cardNumber: '',
+    cardHolderName: '',
+    expiryDate: '',
+    cvv: '',
+    billingAddressLine1: '',
+    billingAddressLine2: '',
+    billingCity: '',
+    billingState: '',
+    billingPostalCode: '',
+    billingCountry: 'USA'
+  });
+
+  const handleShippingSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data: shippingData, error: shippingError } = await supabase
+        .from('shipping_info')
+        .insert({
+          user_id: (await supabase.auth.getUser()).data.user.id,
+          full_name: shippingInfo.fullName,
+          address_line1: shippingInfo.addressLine1,
+          address_line2: shippingInfo.addressLine2,
+          city: shippingInfo.city,
+          state: shippingInfo.state,
+          postal_code: shippingInfo.postalCode,
+          country: shippingInfo.country,
+          phone_number: shippingInfo.phoneNumber
+        })
+        .select()
+        .single();
+
+      if (shippingError) throw shippingError;
+
+      setCurrentStep(2);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const user = (await supabase.auth.getUser()).data.user;
+      const { data: paymentData, error: paymentError } = await supabase
+        .from('payment_info')
+        .insert({
+          user_id: user.id,
+          card_number: paymentInfo.cardNumber,
+          card_holder_name: paymentInfo.cardHolderName,
+          expiry_date: paymentInfo.expiryDate,
+          cvv: paymentInfo.cvv,
+          billing_address_line1: paymentInfo.billingAddressLine1,
+          billing_address_line2: paymentInfo.billingAddressLine2,
+          billing_city: paymentInfo.billingCity,
+          billing_state: paymentInfo.billingState,
+          billing_postal_code: paymentInfo.billingPostalCode,
+          billing_country: paymentInfo.billingCountry
+        })
+        .select()
+        .single();
+
+      if (paymentError) throw paymentError;
+
+      setCurrentStep(3);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOrderSubmit = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Create order
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: (await supabase.auth.getUser()).data.user.id,
+          total_amount: 0, // Calculate from cart
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Clear cart and redirect to success page
+      navigate('/order-success');
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#D3CABE] py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        {/* Progress Steps */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            {[1, 2, 3].map((step) => (
+              <div key={step} className="flex items-center">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    currentStep >= step
+                      ? 'bg-[#8B7355] text-white'
+                      : 'bg-gray-200 text-gray-600'
+                  }`}
+                >
+                  {step}
+                </div>
+                {step < 3 && (
+                  <div
+                    className={`w-24 h-1 ${
+                      currentStep > step ? 'bg-[#8B7355]' : 'bg-gray-200'
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-2">
+            <span className="text-sm text-gray-600">Shipping</span>
+            <span className="text-sm text-gray-600">Payment</span>
+            <span className="text-sm text-gray-600">Confirmation</span>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
+
+        {/* Step 1: Shipping Information */}
+        {currentStep === 1 && (
+          <form onSubmit={handleShippingSubmit} className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-6">Shipping Information</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                  value={shippingInfo.fullName}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, fullName: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Address Line 1</label>
+                <input
+                  type="text"
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                  value={shippingInfo.addressLine1}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, addressLine1: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Address Line 2</label>
+                <input
+                  type="text"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                  value={shippingInfo.addressLine2}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, addressLine2: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">City</label>
+                  <input
+                    type="text"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                    value={shippingInfo.city}
+                    onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">State</label>
+                  <input
+                    type="text"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                    value={shippingInfo.state}
+                    onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Postal Code</label>
+                  <input
+                    type="text"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                    value={shippingInfo.postalCode}
+                    onChange={(e) => setShippingInfo({ ...shippingInfo, postalCode: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+                  <input
+                    type="tel"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                    value={shippingInfo.phoneNumber}
+                    onChange={(e) => setShippingInfo({ ...shippingInfo, phoneNumber: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="mt-6">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#8B7355] text-white py-2 px-4 rounded-md hover:bg-[#6B563D] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8B7355] disabled:opacity-50"
+              >
+                {loading ? 'Processing...' : 'Continue to Payment'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Step 2: Payment Information */}
+        {currentStep === 2 && (
+          <form onSubmit={handlePaymentSubmit} className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-6">Payment Information</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Card Number</label>
+                <input
+                  type="text"
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                  value={paymentInfo.cardNumber}
+                  onChange={(e) => setPaymentInfo({ ...paymentInfo, cardNumber: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Card Holder Name</label>
+                <input
+                  type="text"
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                  value={paymentInfo.cardHolderName}
+                  onChange={(e) => setPaymentInfo({ ...paymentInfo, cardHolderName: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Expiry Date</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="MM/YY"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                    value={paymentInfo.expiryDate}
+                    onChange={(e) => setPaymentInfo({ ...paymentInfo, expiryDate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">CVV</label>
+                  <input
+                    type="text"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                    value={paymentInfo.cvv}
+                    onChange={(e) => setPaymentInfo({ ...paymentInfo, cvv: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="mt-6">
+                <h3 className="text-lg font-medium text-gray-900">Billing Address</h3>
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Address Line 1</label>
+                    <input
+                      type="text"
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                      value={paymentInfo.billingAddressLine1}
+                      onChange={(e) => setPaymentInfo({ ...paymentInfo, billingAddressLine1: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Address Line 2</label>
+                    <input
+                      type="text"
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                      value={paymentInfo.billingAddressLine2}
+                      onChange={(e) => setPaymentInfo({ ...paymentInfo, billingAddressLine2: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">City</label>
+                      <input
+                        type="text"
+                        required
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                        value={paymentInfo.billingCity}
+                        onChange={(e) => setPaymentInfo({ ...paymentInfo, billingCity: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">State</label>
+                      <input
+                        type="text"
+                        required
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                        value={paymentInfo.billingState}
+                        onChange={(e) => setPaymentInfo({ ...paymentInfo, billingState: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Postal Code</label>
+                    <input
+                      type="text"
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B7355] focus:ring-[#8B7355]"
+                      value={paymentInfo.billingPostalCode}
+                      onChange={(e) => setPaymentInfo({ ...paymentInfo, billingPostalCode: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#8B7355] text-white py-2 px-4 rounded-md hover:bg-[#6B563D] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8B7355] disabled:opacity-50"
+              >
+                {loading ? 'Processing...' : 'Review Order'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Step 3: Order Confirmation */}
+        {currentStep === 3 && (
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-2xl font-bold mb-6">Order Confirmation</h2>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Shipping Information</h3>
+                <div className="mt-2 text-gray-600">
+                  <p>{shippingInfo.fullName}</p>
+                  <p>{shippingInfo.addressLine1}</p>
+                  {shippingInfo.addressLine2 && <p>{shippingInfo.addressLine2}</p>}
+                  <p>{`${shippingInfo.city}, ${shippingInfo.state} ${shippingInfo.postalCode}`}</p>
+                  <p>{shippingInfo.phoneNumber}</p>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Payment Information</h3>
+                <div className="mt-2 text-gray-600">
+                  <p>{`Card ending in ${paymentInfo.cardNumber.slice(-4)}`}</p>
+                  <p>{paymentInfo.cardHolderName}</p>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Order Summary</h3>
+                {/* Add order summary here */}
+              </div>
+            </div>
+            <div className="mt-6">
+              <button
+                onClick={handleOrderSubmit}
+                disabled={loading}
+                className="w-full bg-[#8B7355] text-white py-2 px-4 rounded-md hover:bg-[#6B563D] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8B7355] disabled:opacity-50"
+              >
+                {loading ? 'Processing...' : 'Place Order'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Checkout; 

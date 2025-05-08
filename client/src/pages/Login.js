@@ -7,6 +7,7 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [emailConfirmed, setEmailConfirmed] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -40,6 +41,16 @@ const Login = () => {
       if (subscription) subscription.unsubscribe();
     };
   }, [navigate, isForgotPassword]);
+
+  useEffect(() => {
+    // Check for email confirmation in URL
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery') || hash.includes('type=signup')) {
+      setEmailConfirmed(true);
+      // Clear the hash from URL
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   // Password strength checker
   const checkPasswordStrength = (password) => {
@@ -330,6 +341,23 @@ const Login = () => {
               (isSignUp ? 'Join our community of art enthusiasts' : 'Sign in to continue')}
           </p>
         </div>
+
+        {emailConfirmed && (
+          <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-md animate-slideIn">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-green-700">
+                  Your email has been successfully verified! You can now sign in to your account.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {resetEmailSent && (
           <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-md animate-slideIn">
