@@ -120,8 +120,9 @@ const ExplorePage = () => {
         query = query.eq('Artwork.owner_id', user.id);
       }
       if (auctionedIds.length > 0) {
-        query = query.not('artwork_id', 'in', auctionedIds);
+        query = query.not('artwork_id', 'in.(' + auctionedIds.join(',') + ')');
       }
+      
 
       console.log('Executing gallery query...');
       const { data, error } = await query;
