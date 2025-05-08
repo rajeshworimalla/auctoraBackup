@@ -84,76 +84,73 @@ const ExplorePage = () => {
 
       console.log('Starting to fetch gallery items...');
 
-      // First, get artwork IDs that are in active auctions to exclude them
-      const { data: auctionedArtworks, error: auctionError } = await supabase
-        .from('auctions')
-        .select('artwork_id')
-        .in('status', ['active', 'pending']);
-
-      if (auctionError) {
-        console.error('Error fetching auctioned artworks:', auctionError);
-        throw auctionError;
-      }
-
-      const auctionedIds = (auctionedArtworks || []).map(a => a.artwork_id);
-      console.log('Artwork IDs in auctions:', auctionedIds);
-
-      // Now fetch artworks that are not in auctions
+      // Query the gallery table and join with Artwork
       let query = supabase
-        .from('Artwork')
-        .select('*')
-        .not('artwork_id', 'in', auctionedIds);
+        .from('gallery')
+        .select(`
+          *,
+          Artwork (*)
+        `);
 
       // Apply filters
       if (filters.search) {
-        query = query.ilike('title', `%${filters.search}%`);
+        query = query.ilike('Artwork.title', `%${filters.search}%`);
       }
       if (filters.category) {
-        query = query.eq('category', filters.category);
+        query = query.eq('Artwork.category', filters.category);
       }
       if (filters.medium) {
-        query = query.eq('medium', filters.medium);
+        query = query.eq('Artwork.medium', filters.medium);
       }
       if (filters.minPrice) {
-        query = query.gte('price', filters.minPrice);
+        query = query.gte('Artwork.price', filters.minPrice);
       }
       if (filters.maxPrice) {
-        query = query.lte('price', filters.maxPrice);
+        query = query.lte('Artwork.price', filters.maxPrice);
       }
 
       if (showMyListings && user) {
-        query = query.eq('owner_id', user.id);
+        query = query.eq('Artwork.owner_id', user.id);
       }
 
       // Apply sorting
       switch (filters.sortBy) {
         case 'price_low':
-          query = query.order('price', { ascending: true });
+          query = query.order('Artwork.price', { ascending: true });
           break;
         case 'price_high':
-          query = query.order('price', { ascending: false });
+          query = query.order('Artwork.price', { ascending: false });
           break;
         case 'newest':
         default:
           query = query.order('created_at', { ascending: false });
       }
 
-      const { data: artworks, error: artworksError } = await query;
+      const { data: galleryData, error: galleryError } = await query;
 
-      console.log('Raw gallery data:', artworks);
+      console.log('Raw gallery data:', galleryData);
 
-      if (artworksError) {
-        console.error('Error fetching artworks:', artworksError);
-        throw artworksError;
+      if (galleryError) {
+        console.error('Error fetching gallery:', galleryError);
+        throw galleryError;
       }
 
-      if (!artworks || artworks.length === 0) {
-        console.log('No items found in gallery');
+      if (!galleryData || galleryData.length === 0) {
+        console.log('No items found in gallery table');
         setArtworks([]);
         return;
       }
 
-      setArtworks(artworks);
+      // Map the data to include gallery-specific information
+      const mappedArtworks = galleryData.map(item => ({
+        ...item.Artwork,
+        gallery_id: item.id,
+        featured: item.featured,
+        display_order: item.display_order
+      }));
+
+      console.log('Mapped artworks:', mappedArtworks);
+      setArtworks(mappedArtworks);
     } catch (error) {
       console.error('Error in fetchArtworks:', error);
       setError('Failed to fetch artworks. Please try again.');
