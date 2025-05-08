@@ -58,11 +58,12 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
       setSuccessMessage('');
 
       // Validate required fields
-      if (!title || !description || !price || (!imageUrl && !file)) {
+      if (!title || !description || !artistName || (!imageUrl && !file)) {
         throw new Error('Please fill in all required fields');
       }
-
-      // Validate auction fields if mode is auction
+      if (mode === 'gallery' && !price) {
+        throw new Error('Please provide a price for gallery artwork');
+      }
       if (mode === 'auction') {
         if (!startingBid || parseFloat(startingBid) <= 0) {
           throw new Error('Starting bid must be greater than zero');
@@ -76,6 +77,10 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
         if (!auctionDuration || auctionDuration < 1 || auctionDuration > 30) {
           throw new Error('Auction duration must be between 1 and 30 days');
         }
+      }
+
+      if (uploadMode === 'url' && !/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(imageUrl)) {
+        throw new Error('Please provide a valid public image URL ending in .jpg, .jpeg, .png, .gif, or .webp');
       }
 
       const user = await supabase.auth.getUser();
