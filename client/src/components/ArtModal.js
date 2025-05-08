@@ -292,6 +292,36 @@ const ArtModal = ({ isOpen, onClose, art }) => {
     }
   }, [isOpen]);
 
+  // Handler to move unsold ended auction artwork to gallery
+  const handleMoveToGallery = async () => {
+    try {
+      // Check if already in gallery
+      const { data: existing, error: checkError } = await supabase
+        .from('gallery')
+        .select('artwork_id')
+        .eq('artwork_id', art.artwork?.artwork_id || art.artwork_id)
+        .single();
+
+      if (existing) {
+        alert('This artwork is already in the gallery.');
+        return;
+      }
+
+      // Insert into gallery
+      const { error: insertError } = await supabase
+        .from('gallery')
+        .insert([{ artwork_id: art.artwork?.artwork_id || art.artwork_id, featured: false, display_order: 1 }]);
+
+      if (insertError) {
+        alert('Failed to move artwork to gallery.');
+      } else {
+        alert('Artwork moved to gallery!');
+      }
+    } catch (err) {
+      alert('Error moving artwork to gallery.');
+    }
+  };
+
   if (!isOpen || !art) return null;
 
   // Get the artwork image URL from either the auction or artwork object
@@ -335,7 +365,18 @@ const ArtModal = ({ isOpen, onClose, art }) => {
 
         {/* Countdown */}
         {timeLeft?.expired ? (
-          <p className="text-red-500 mb-2">Auction ended</p>
+          <div className="mb-2">
+            <p className="text-red-500">Auction ended</p>
+            {/* Show button if not sold */}
+            {!art.artwork?.is_sold && (
+              <button
+                onClick={handleMoveToGallery}
+                className="mt-2 px-4 py-2 bg-[#8B7355] text-white rounded hover:bg-[#6B563D] transition"
+              >
+                Move to Gallery
+              </button>
+            )}
+          </div>
         ) : (
           <p className="text-sm mb-2 text-gray-800">
             Time Left: {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s

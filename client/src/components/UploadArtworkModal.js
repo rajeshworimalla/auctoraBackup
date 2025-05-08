@@ -128,6 +128,12 @@ const UploadArtworkModal = ({ isOpen, onClose }) => {
 
         setSuccessMessage('Artwork successfully uploaded to gallery');
       } else if (mode === 'auction') {
+        // Remove from gallery if it exists (prevents duplication)
+        await supabase
+          .from('gallery')
+          .delete()
+          .eq('artwork_id', artwork_id);
+
         const start_time = startDate ? new Date(startDate) : new Date();
         const end_time = new Date(start_time.getTime() + auctionDuration * 24 * 60 * 60 * 1000);
 

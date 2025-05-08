@@ -82,34 +82,45 @@ const ExplorePage = () => {
       setLoading(true);
       setError(null);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      // 1. Get artwork_ids in active/pending auctions
+      const { data: auctioned, error: auctionedError } = await supabase
+        .from('auctions')
+        .select('artwork_id')
+        .in('status', ['active', 'pending']);
+
+      const auctionedIds = (auctioned || []).map(a => a.artwork_id);
+
+      // 2. Fetch gallery items not in auction
       let query = supabase
-        .from('Artwork')
-        .select('*')
-        .eq('is_sold', false);
+        .from('gallery')
+        .select('*, Artwork(*)');
 
       // Apply filters
       if (filters.minPrice) {
-        query = query.gte('price', filters.minPrice);
+        query = query.gte('Artwork.price', filters.minPrice);
       }
       if (filters.maxPrice) {
-        query = query.lte('price', filters.maxPrice);
+        query = query.lte('Artwork.price', filters.maxPrice);
       }
       if (filters.category) {
-        query = query.eq('category', filters.category);
+        query = query.eq('Artwork.category', filters.category);
       }
       if (filters.medium) {
-        query = query.eq('medium', filters.medium);
+        query = query.eq('Artwork.medium', filters.medium);
       }
       if (showMyListings && user) {
-        query = query.eq('owner_id', user.id);
+        query = query.eq('Artwork.owner_id', user.id);
+      }
+      query = query.eq('Artwork.is_sold', false);
+      if (auctionedIds.length > 0) {
+        query = query.not('artwork_id', 'in', auctionedIds);
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
 
-      setArtworks(data || []);
+      // Map to artwork objects for rendering
+      setArtworks((data || []).map(g => g.Artwork));
     } catch (error) {
       console.error('Error fetching artworks:', error);
       setError('Failed to fetch artworks. Please try again.');
