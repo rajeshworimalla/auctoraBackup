@@ -88,13 +88,20 @@ const ExplorePage = () => {
         .select('artwork_id')
         .in('status', ['active', 'pending']);
 
+      if (auctionedError) {
+        console.error('Error fetching auctioned artworks:', auctionedError);
+        throw auctionedError;
+      }
+
+      console.log('Auctioned artworks:', auctioned);
+
       const auctionedIds = (auctioned || []).map(a => a.artwork_id);
+      console.log('Auctioned IDs:', auctionedIds);
 
       // 2. Fetch gallery items not in auction
       let query = supabase
         .from('gallery')
-        .select('*, Artwork:artwork_id(*)')
-        .eq('Artwork.is_sold', false);
+        .select('*, Artwork:artwork_id(*)');
 
       // Apply filters
       if (filters.minPrice) {
@@ -116,11 +123,21 @@ const ExplorePage = () => {
         query = query.not('artwork_id', 'in', auctionedIds);
       }
 
+      console.log('Executing gallery query...');
       const { data, error } = await query;
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Error in gallery query:', error);
+        throw error;
+      }
+
+      console.log('Gallery query result:', data);
 
       // Map to artwork objects for rendering
-      setArtworks((data || []).map(g => g.Artwork));
+      const mappedArtworks = (data || []).map(g => g.Artwork);
+      console.log('Mapped artworks:', mappedArtworks);
+      
+      setArtworks(mappedArtworks);
     } catch (error) {
       console.error('Error fetching artworks:', error);
       setError('Failed to fetch artworks. Please try again.');
