@@ -180,31 +180,7 @@ const Login = () => {
       const siteUrl = window.location.origin;
       console.log('Site URL:', siteUrl);
 
-      // First, create the user in the users table
-      console.log('Creating user record...');
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .insert({
-          Email: formData.email,
-          Fname: formData.firstName,
-          Lname: formData.lastName,
-          Phone: formData.phone,
-          Username: `${formData.firstName} ${formData.lastName}`,
-          Created_At: new Date().toISOString(),
-          Updated_At: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (userError) {
-        console.error('User creation error:', userError);
-        setError(`Unable to create user account: ${userError.message}`);
-        return;
-      }
-
-      console.log('User record created:', userData);
-
-      // Then, create the auth user
+      // Sign up the user with Supabase Auth
       console.log('Creating auth user...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -230,12 +206,6 @@ const Login = () => {
         console.error('Status:', authError.status);
         console.error('Name:', authError.name);
         
-        // If auth creation fails, delete the user record
-        await supabase
-          .from('users')
-          .delete()
-          .eq('Email', formData.email);
-        
         if (authError.message.includes('already registered')) {
           setError('An account with this email already exists. Please sign in instead.');
         } else {
@@ -248,16 +218,6 @@ const Login = () => {
         console.error('No user ID returned from auth signup');
         setError('Failed to create user account. Please try again.');
         return;
-      }
-
-      // Update the user record with the auth ID
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ User_Id: authData.user.id })
-        .eq('Email', formData.email);
-
-      if (updateError) {
-        console.error('Error updating user with auth ID:', updateError);
       }
 
       console.log('=== SIGNUP SUCCESSFUL ===');
