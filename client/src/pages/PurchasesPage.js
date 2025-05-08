@@ -66,31 +66,40 @@ const PurchasesPage = () => {
     fetchPurchases();
   }, []);
 
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Please log in to view your purchases');
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, order_items(*, artwork:artwork_id(title, image_url, price))')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Please log in to view your purchases');
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*, order_items(*, artwork:artwork_id(title, image_url, price))')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        setOrders(data || []);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchOrders();
   }, []);
 
   const activeOrders = orders.filter(order => order.status !== 'delivered');
   const pastPurchases = orders.filter(order => order.status === 'delivered');
+
+  const handleMarkAsDelivered = async (orderId) => {
+    await supabase
+      .from('orders')
+      .update({ status: 'delivered' })
+      .eq('id', orderId);
+    fetchOrders();
+  };
 
   if (loading) {
     return (
@@ -120,7 +129,30 @@ const PurchasesPage = () => {
         
         <section className="mb-10">
           <h2 className="text-xl font-semibold mb-4">Active Orders</h2>
-          {/* Render activeOrders here */}
+          {activeOrders.map(order => (
+            <div key={order.id} className="bg-white rounded-lg shadow-md p-6 mb-4">
+              <h3 className="text-lg font-bold mb-2">Order #{order.id.slice(0, 8)}</h3>
+              <div className="mb-2 text-sm text-gray-500">Status: {order.status}</div>
+              <div>
+                {order.order_items.map(item => (
+                  <div key={item.id} className="flex items-center mb-2">
+                    <img src={item.artwork?.image_url || '/Images/placeholder-art.jpg'} alt={item.artwork?.title} className="w-12 h-12 object-cover rounded mr-3" />
+                    <div>
+                      <div className="font-medium">{item.artwork?.title}</div>
+                      <div className="text-xs text-gray-500">x{item.quantity} • ${item.price_at_time}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="font-bold mt-2">Total: ${order.total_amount}</div>
+              <button
+                onClick={() => handleMarkAsDelivered(order.id)}
+                className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+              >
+                Mark as Delivered
+              </button>
+            </div>
+          ))}
         </section>
         <section>
           <h2 className="text-xl font-semibold mb-4">Past Purchases</h2>

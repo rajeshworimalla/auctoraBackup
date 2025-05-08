@@ -8,6 +8,7 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
 
   // Form states
   const [shippingInfo, setShippingInfo] = useState({
@@ -106,12 +107,14 @@ const Checkout = () => {
     setError(null);
 
     try {
-      // Create order
+      const user = (await supabase.auth.getUser()).data.user;
+
+      // 1. Create order
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
-          user_id: (await supabase.auth.getUser()).data.user.id,
-          total_amount: 0, // Calculate from cart
+          user_id: user.id,
+          total_amount: cartItems.reduce((total, item) => total + (item.price * item.quantity), 0),
           status: 'pending'
         })
         .select()
@@ -119,6 +122,20 @@ const Checkout = () => {
 
       if (orderError) throw orderError;
 
+      // 2. Create order_items for each cart item
+      for (const item of cartItems) {
+        await supabase.from('order_items').insert({
+          order_id: orderData.id,
+          artwork_id: item.artwork_id,
+          quantity: item.quantity,
+          price_at_time: item.price
+        });
+      }
+
+      // 3. Clear cart
+      await supabase.from('cart_items').delete().eq('user_id', user.id);
+
+      // 4. Show success
       setOrderSuccess(true);
     } catch (error) {
       setError(error.message);

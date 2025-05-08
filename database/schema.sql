@@ -18,6 +18,7 @@ DROP TABLE IF EXISTS trendingbids;
 DROP TABLE IF EXISTS auctions;
 DROP TABLE IF EXISTS artworks;
 DROP TABLE IF EXISTS cart_items;
+DROP TABLE IF EXISTS "User";
 
 -- Create artworks table
 CREATE TABLE artworks (
@@ -71,6 +72,16 @@ CREATE TABLE cart_items (
     price DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create User table
+CREATE TABLE "User" (
+    "User_Id" UUID PRIMARY KEY REFERENCES auth.users(id),
+    "Fname" VARCHAR(255),
+    "Lname" VARCHAR(255),
+    "Email" VARCHAR(255) UNIQUE,
+    "Username" VARCHAR(50) UNIQUE NOT NULL,
+    "Created_At" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes for better query performance
@@ -304,3 +315,67 @@ SELECT id,
        created_at
 FROM auth.users
 ON CONFLICT ("User_Id") DO NOTHING;
+
+-- Drop existing triggers and functions
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user;
+DROP TABLE IF EXISTS public.users CASCADE;
+
+-- Create users table with proper constraints
+CREATE TABLE public.users (
+  "User_Id" uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  "Email" text NOT NULL UNIQUE,
+  "Fname" text,
+  "Lname" text,
+  "Phone" text,
+  "Username" text NOT NULL UNIQUE,
+  "Created_At" timestamptz DEFAULT now(),
+  "Updated_At" timestamptz DEFAULT now(),
+  CONSTRAINT username_length CHECK (char_length("Username") >= 3),
+  CONSTRAINT username_format CHECK ("Username" ~ '^[a-zA-Z0-9_]+$')
+);
+
+-- Enable Row Level Security
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+-- Policies for authenticated users
+CREATE POLICY "Allow user insert"
+ON public.users FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = "User_Id");
+
+CREATE POLICY "Allow user read"
+ON public.users FOR SELECT
+TO authenticated
+USING (auth.uid() = "User_Id");
+
+CREATE POLICY "Allow user update"
+ON public.users FOR UPDATE
+TO authenticated
+USING (auth.uid() = "User_Id");
+
+-- Create function to handle new user creation
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.users ("User_Id", "Email", "Fname", "Lname", "Phone", "Username")
+  VALUES (
+    NEW.id,
+    NEW.email,
+    NEW.raw_user_meta_data->>'first_name',
+    NEW.raw_user_meta_data->>'last_name',
+    NEW.raw_user_meta_data->>'phone',
+    NEW.raw_user_meta_data->>'username'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create trigger for new user creation
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- Create index for username lookups
+CREATE INDEX idx_users_username ON public.users ("Username");

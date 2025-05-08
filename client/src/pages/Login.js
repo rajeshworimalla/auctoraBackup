@@ -13,7 +13,8 @@ const Login = () => {
     lastName: '',
     email: '',
     phone: '',
-    password: ''
+    password: '',
+    username: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -133,6 +134,16 @@ const Login = () => {
 
   const validateForm = () => {
     if (isSignUp) {
+      // Username validation
+      if (!formData.username || formData.username.length < 3) {
+        setError('Username must be at least 3 characters long');
+        return false;
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+        setError('Username can only contain letters, numbers, and underscores');
+        return false;
+      }
+
       // Phone number validation (US format)
       const phoneRegex = /^\(\d{3}\) \d{3}-\d{4}$/;
       if (!phoneRegex.test(formData.phone)) {
@@ -184,8 +195,22 @@ const Login = () => {
         email: formData.email,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        phone: formData.phone
+        phone: formData.phone,
+        username: formData.username
       });
+
+      // Check if username is already taken
+      const { data: existingUser, error: checkError } = await supabase
+        .from('User')
+        .select('Username')
+        .eq('Username', formData.username)
+        .single();
+
+      if (existingUser) {
+        setError('This username is already taken. Please choose another one.');
+        setLoading(false);
+        return;
+      }
 
       // Get the current URL origin
       const siteUrl = window.location.origin;
@@ -201,7 +226,7 @@ const Login = () => {
             first_name: formData.firstName,
             last_name: formData.lastName,
             phone: formData.phone,
-            username: `${formData.firstName} ${formData.lastName}`,
+            username: formData.username,
           },
           emailRedirectTo: `${siteUrl}/login`
         }
@@ -239,7 +264,8 @@ const Login = () => {
         lastName: '',
         email: '',
         phone: '',
-        password: ''
+        password: '',
+        username: ''
       });
       setPasswordStrength({ score: 0, message: '' });
     } catch (error) {
@@ -425,6 +451,25 @@ const Login = () => {
                     onChange={handleInputChange}
                   />
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#D3CABE] focus:border-[#D3CABE] focus:z-10 transition-all duration-300 ease-in-out hover:border-[#D3CABE]"
+                  placeholder="Choose a username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Username can only contain letters, numbers, and underscores
+                </p>
               </div>
 
               <div>

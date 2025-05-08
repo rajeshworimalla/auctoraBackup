@@ -111,24 +111,24 @@ const ArtModal = ({ isOpen, onClose, art }) => {
           console.log('Fetching user for bid:', bid); // Debugging log
           try {
             const { data: userData, error: userError } = await supabase
-              .from('User') // Correctly reference the table name
-              .select('Fname, Lname') // Remove double quotes for column names
-              .eq('User_Id', bid.bidder_id) // Remove double quotes for column name
+              .from('User')
+              .select('Username') // Only select Username field
+              .eq('User_Id', bid.bidder_id)
               .single();
 
             console.log('Supabase query executed for bidder_id:', bid.bidder_id); // Debugging log
             if (userError) {
               console.error(`Error fetching user for bidder_id ${bid.bidder_id}:`, userError);
-              return { ...bid, user: { display_name: 'Unknown' } };
+              return { ...bid, user: { display_name: 'Anonymous' } };
             }
 
             console.log('Fetched user data:', userData); // Debugging log
-            const displayName = userData.Fname || userData.Lname ? `${userData.Fname || ''} ${userData.Lname || ''}`.trim() : 'Anonymous';
-            console.log(`Constructed display name for bidder_id ${bid.bidder_id}: ${displayName}`); // Debugging log
+            const displayName = userData?.Username || 'Anonymous';
+            console.log(`Using username for bidder_id ${bid.bidder_id}: ${displayName}`); // Debugging log
             return { ...bid, user: { display_name: displayName } };
           } catch (err) {
             console.error(`Error fetching user for bidder_id ${bid.bidder_id}:`, err);
-            return { ...bid, user: { display_name: 'Unknown' } };
+            return { ...bid, user: { display_name: 'Anonymous' } };
           }
         })
       );
