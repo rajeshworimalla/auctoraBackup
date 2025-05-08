@@ -119,7 +119,7 @@ const Checkout = () => {
       if (orderError) throw orderError;
 
       // Clear cart and redirect to success page
-      navigate('/order-success');
+      navigate('/purchases');
     } catch (error) {
       setError(error.message);
     } finally {
@@ -378,40 +378,33 @@ const Checkout = () => {
 
         {/* Step 3: Order Confirmation */}
         {currentStep === 3 && (
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold mb-6">Order Confirmation</h2>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Shipping Information</h3>
-                <div className="mt-2 text-gray-600">
-                  <p>{shippingInfo.fullName}</p>
-                  <p>{shippingInfo.addressLine1}</p>
-                  {shippingInfo.addressLine2 && <p>{shippingInfo.addressLine2}</p>}
-                  <p>{`${shippingInfo.city}, ${shippingInfo.state} ${shippingInfo.postalCode}`}</p>
-                  <p>{shippingInfo.phoneNumber}</p>
-                </div>
+          <div className="bg-white p-8 rounded-2xl shadow-lg max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold mb-6 text-center text-[#8B7355]">Order Confirmation</h2>
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold mb-2">Shipping Information</h3>
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <p><span className="font-medium">Name:</span> {shippingInfo.fullName}</p>
+                <p><span className="font-medium">Address:</span> {shippingInfo.addressLine1} {shippingInfo.addressLine2}</p>
+                <p><span className="font-medium">City/State:</span> {shippingInfo.city}, {shippingInfo.state} {shippingInfo.postalCode}</p>
+                <p><span className="font-medium">Phone:</span> {shippingInfo.phoneNumber}</p>
               </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Payment Information</h3>
-                <div className="mt-2 text-gray-600">
-                  <p>{`Card ending in ${paymentInfo.cardNumber.slice(-4)}`}</p>
-                  <p>{paymentInfo.cardHolderName}</p>
-                </div>
+              <h3 className="text-xl font-semibold mb-2">Payment Information</h3>
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <p><span className="font-medium">Card:</span> **** **** **** {paymentInfo.cardNumber.slice(-4)}</p>
+                <p><span className="font-medium">Name:</span> {paymentInfo.cardHolderName}</p>
               </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Order Summary</h3>
+              <h3 className="text-xl font-semibold mb-2">Order Summary</h3>
+              <div className="bg-gray-50 rounded-lg p-4">
                 {/* Add order summary here */}
               </div>
             </div>
-            <div className="mt-6">
-              <button
-                onClick={handleOrderSubmit}
-                disabled={loading}
-                className="w-full bg-[#8B7355] text-white py-2 px-4 rounded-md hover:bg-[#6B563D] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8B7355] disabled:opacity-50"
-              >
-                {loading ? 'Processing...' : 'Place Order'}
-              </button>
-            </div>
+            <button
+              onClick={handleOrderSubmit}
+              disabled={loading}
+              className="w-full bg-[#8B7355] text-white py-3 rounded-lg hover:bg-[#6B563D] text-lg font-semibold transition-colors"
+            >
+              {loading ? 'Processing...' : 'Place Order'}
+            </button>
           </div>
         )}
       </div>

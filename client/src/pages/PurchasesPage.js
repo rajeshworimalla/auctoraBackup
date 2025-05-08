@@ -6,6 +6,7 @@ const PurchasesPage = () => {
   const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
     const fetchPurchases = async () => {
@@ -65,6 +66,14 @@ const PurchasesPage = () => {
     fetchPurchases();
   }, []);
 
+  useEffect(() => {
+    // Fetch orders for the user
+    // setOrders(fetchedOrders);
+  }, []);
+
+  const activeOrders = orders.filter(order => order.status !== 'delivered');
+  const pastPurchases = orders.filter(order => order.status === 'delivered');
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
@@ -90,6 +99,15 @@ const PurchasesPage = () => {
     <div className="min-h-screen bg-[#F5F5F5] py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-serif font-bold text-[#8B7355] mb-8">My Purchases</h1>
+        
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold mb-4">Active Orders</h2>
+          {/* Render activeOrders here */}
+        </section>
+        <section>
+          <h2 className="text-xl font-semibold mb-4">Past Purchases</h2>
+          {/* Render pastPurchases here */}
+        </section>
         
         {purchases.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
