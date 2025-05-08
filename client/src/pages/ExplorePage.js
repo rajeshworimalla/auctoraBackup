@@ -84,37 +84,78 @@ const ExplorePage = () => {
 
       console.log('Starting to fetch gallery items...');
 
-      // Simple query to fetch all gallery items
-      const { data, error } = await supabase
-        .from('gallery')
-        .select('*');
+      // First, get artwork IDs that are in active auctions to exclude them
+      const { data: auctionedArtworks, error: auctionError } = await supabase
+        .from('auctions')
+        .select('artwork_id')
+        .in('status', ['active', 'pending']);
 
-      console.log('Raw gallery data:', data);
-      
-      if (error) {
-        console.error('Error in gallery query:', error);
-        throw error;
+      if (auctionError) {
+        console.error('Error fetching auctioned artworks:', auctionError);
+        throw auctionError;
       }
 
-      // Now fetch the artwork details
-      const artworkIds = data.map(item => item.artwork_id);
-      console.log('Artwork IDs:', artworkIds);
+      const auctionedIds = (auctionedArtworks || []).map(a => a.artwork_id);
+      console.log('Artwork IDs in auctions:', auctionedIds);
 
-      const { data: artworkData, error: artworkError } = await supabase
+      // Now fetch artworks that are not in auctions
+      let query = supabase
         .from('Artwork')
         .select('*')
-        .in('artwork_id', artworkIds);
+        .not('artwork_id', 'in', auctionedIds);
 
-      console.log('Artwork data:', artworkData);
-
-      if (artworkError) {
-        console.error('Error fetching artwork details:', artworkError);
-        throw artworkError;
+      // Apply filters
+      if (filters.search) {
+        query = query.ilike('title', `%${filters.search}%`);
+      }
+      if (filters.category) {
+        query = query.eq('category', filters.category);
+      }
+      if (filters.medium) {
+        query = query.eq('medium', filters.medium);
+      }
+      if (filters.minPrice) {
+        query = query.gte('price', filters.minPrice);
+      }
+      if (filters.maxPrice) {
+        query = query.lte('price', filters.maxPrice);
       }
 
-      setArtworks(artworkData || []);
+      if (showMyListings && user) {
+        query = query.eq('owner_id', user.id);
+      }
+
+      // Apply sorting
+      switch (filters.sortBy) {
+        case 'price_low':
+          query = query.order('price', { ascending: true });
+          break;
+        case 'price_high':
+          query = query.order('price', { ascending: false });
+          break;
+        case 'newest':
+        default:
+          query = query.order('created_at', { ascending: false });
+      }
+
+      const { data: artworks, error: artworksError } = await query;
+
+      console.log('Raw gallery data:', artworks);
+
+      if (artworksError) {
+        console.error('Error fetching artworks:', artworksError);
+        throw artworksError;
+      }
+
+      if (!artworks || artworks.length === 0) {
+        console.log('No items found in gallery');
+        setArtworks([]);
+        return;
+      }
+
+      setArtworks(artworks);
     } catch (error) {
-      console.error('Error fetching artworks:', error);
+      console.error('Error in fetchArtworks:', error);
       setError('Failed to fetch artworks. Please try again.');
     } finally {
       setLoading(false);

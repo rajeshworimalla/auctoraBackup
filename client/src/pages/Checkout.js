@@ -415,7 +415,60 @@ const Checkout = () => {
             <div className="mb-8">
               <h3 className="text-xl font-semibold mb-4">Order Summary</h3>
               <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                {/* Add order summary here */}
+                {/* Items List */}
+                <div className="space-y-4">
+                  {cartItems.map((item) => (
+                    <div key={item.artwork_id} className="flex items-start space-x-4 py-4 border-b border-gray-200 last:border-0">
+                      {/* Thumbnail */}
+                      <div className="w-20 h-20 flex-shrink-0">
+                        <img
+                          src={item.image_url || '/Images/placeholder-art.jpg'}
+                          alt={item.title}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      </div>
+
+                      {/* Item Details */}
+                      <div className="flex-grow">
+                        <div className="flex justify-between">
+                          <div>
+                            <h4 className="text-base font-medium text-gray-900">{item.title}</h4>
+                            <p className="text-sm text-gray-500">by {item.artist_name}</p>
+                            <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-base font-medium text-gray-900">
+                              ${(item.price * item.quantity).toFixed(2)}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              ${item.price.toFixed(2)} each
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Order Totals */}
+                <div className="mt-6 space-y-3 border-t border-gray-200 pt-4">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Subtotal</span>
+                    <span>${cartItems.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Shipping</span>
+                    <span>Free</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Tax</span>
+                    <span>${(cartItems.reduce((total, item) => total + (item.price * item.quantity), 0) * 0.1).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold text-gray-900 pt-3 border-t border-gray-200">
+                    <span>Total</span>
+                    <span>${(cartItems.reduce((total, item) => total + (item.price * item.quantity), 0) * 1.1).toFixed(2)}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
