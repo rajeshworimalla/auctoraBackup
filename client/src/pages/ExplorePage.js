@@ -222,7 +222,8 @@ const ExplorePage = () => {
             .single(),
           supabase
             .from('bids')
-            .select(`*, user:bidder_id (id, raw_user_meta_data)`)
+            .select(`*, users:bidder_id (User_Id, Username, Phone)`)
+
             .eq('auction_id', auctionId)
             .order('amount', { ascending: false })
             .limit(3)
