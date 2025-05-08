@@ -1,21 +1,27 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY
+// Load environment variables
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables!')
-  console.log('SUPABASE_URL:', supabaseUrl)
-  console.log('SUPABASE_ANON_KEY:', supabaseAnonKey ? 'exists' : 'missing')
-}
+// Log configuration (without exposing the key)
+console.log('Supabase URL:', supabaseUrl);
+console.log('Supabase Key exists:', !!supabaseAnonKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Initialize client
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
 
 // Test the connection
-supabase.from('Artwork').select('count').then(({ data, error }) => {
+supabase.auth.getSession().then(({ data: { session }, error }) => {
   if (error) {
-    console.error('Supabase initialization error:', error)
+    console.error('Supabase connection error:', error.message);
   } else {
-    console.log('Supabase initialized successfully')
+    console.log('Supabase connected successfully');
   }
-}) 
+});
