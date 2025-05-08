@@ -93,7 +93,8 @@ const ExplorePage = () => {
       // 2. Fetch gallery items not in auction
       let query = supabase
         .from('gallery')
-        .select('*, Artwork:artwork_id(*)');
+        .select('*, Artwork:artwork_id(*)')
+        .eq('Artwork.is_sold', false);
 
       // Apply filters
       if (filters.minPrice) {
@@ -111,7 +112,6 @@ const ExplorePage = () => {
       if (showMyListings && user) {
         query = query.eq('Artwork.owner_id', user.id);
       }
-      query = query.eq('Artwork.is_sold', false);
       if (auctionedIds.length > 0) {
         query = query.not('artwork_id', 'in', auctionedIds);
       }
