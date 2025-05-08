@@ -69,21 +69,23 @@ const PurchasesPage = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Please log in to view your purchases');
         const { data, error } = await supabase
           .from('orders')
           .select('*, order_items(*, artwork:artwork_id(title, image_url, price))')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
-
         if (error) throw error;
-
-        setOrders(data);
+        setOrders(data || []);
       } catch (error) {
-        console.error('Error fetching orders:', error);
         setError(error.message);
+      } finally {
+        setLoading(false);
       }
     };
-
     fetchOrders();
   }, []);
 
