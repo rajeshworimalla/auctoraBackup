@@ -6,7 +6,7 @@ import AuctionCard from '../components/AuctionCard';
 import ArtModal from '../components/ArtModal';
 import GalleryModal from '../components/GalleryModal';
 import UploadArtworkModal from '../components/UploadArtworkModal';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const ExplorePage = () => {
   const [showUpload, setShowUpload] = useState(false);
@@ -30,6 +30,8 @@ const ExplorePage = () => {
     artist: '',
     sortBy: 'newest'
   });
+
+  const navigate = useNavigate();
 
   // Test Supabase connection
   useEffect(() => {
@@ -303,11 +305,11 @@ const ExplorePage = () => {
     setSelectedItem(item);
   };
 
-  const handleBidUpdate = (auctionId, newBid) => {
-    setAuctions(prevAuctions => 
-      prevAuctions.map(auction => 
-        auction.auction_id === auctionId 
-          ? { ...auction, current_highest_bid: newBid }
+  const handleBidUpdate = (auctionId, newBid, newBidCount) => {
+    setAuctions(prevAuctions =>
+      prevAuctions.map(auction =>
+        auction.auction_id === auctionId
+          ? { ...auction, current_highest_bid: newBid, total_bids: newBidCount }
           : auction
       )
     );
@@ -566,10 +568,10 @@ const ExplorePage = () => {
                 </button>
 
                 <button
-                  onClick={() => setShowMyListings(!showMyListings)}
+                  onClick={() => navigate('/my-listings')}
                   className="inline-flex items-center px-4 py-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-all duration-200 text-gray-700 font-medium"
                 >
-                  {showMyListings ? 'Show All Listings' : 'Show My Active Listings'}
+                  Show My Active Listings
                 </button>
               </>
             )}

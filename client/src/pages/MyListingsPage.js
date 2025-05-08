@@ -113,6 +113,16 @@ const MyListingsPage = () => {
     fetchListings();
   }, [activeTab]);
 
+  const handleBidUpdate = (auctionId, newBid, newBidCount) => {
+    setListings(prevListings =>
+      prevListings.map(item =>
+        item.id === auctionId && item.type === 'auction'
+          ? { ...item, current_highest_bid: newBid, total_bids: newBidCount }
+          : item
+      )
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">

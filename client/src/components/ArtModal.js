@@ -240,7 +240,7 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
       setBidAmount('');
       toast.success('Bid placed successfully!');
       if (onBidUpdate) {
-        onBidUpdate(auctionId, bidAmountNum);
+        onBidUpdate(auctionId, bidAmountNum, bidCount + 1);
       }
     } catch (error) {
       console.error('Error placing bid:', error);
