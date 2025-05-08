@@ -180,8 +180,32 @@ const Login = () => {
       const siteUrl = window.location.origin;
       console.log('Site URL:', siteUrl);
 
-      // Sign up the user with Supabase Auth
-      console.log('Attempting to create auth user...');
+      // First, create the user in the users table
+      console.log('Creating user record...');
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .insert({
+          Email: formData.email,
+          Fname: formData.firstName,
+          Lname: formData.lastName,
+          Phone: formData.phone,
+          Username: `${formData.firstName} ${formData.lastName}`,
+          Created_At: new Date().toISOString(),
+          Updated_At: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (userError) {
+        console.error('User creation error:', userError);
+        setError(`Unable to create user account: ${userError.message}`);
+        return;
+      }
+
+      console.log('User record created:', userData);
+
+      // Then, create the auth user
+      console.log('Creating auth user...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -206,6 +230,12 @@ const Login = () => {
         console.error('Status:', authError.status);
         console.error('Name:', authError.name);
         
+        // If auth creation fails, delete the user record
+        await supabase
+          .from('users')
+          .delete()
+          .eq('Email', formData.email);
+        
         if (authError.message.includes('already registered')) {
           setError('An account with this email already exists. Please sign in instead.');
         } else {
@@ -215,25 +245,21 @@ const Login = () => {
       }
 
       if (!authData?.user?.id) {
-        console.error('=== NO USER ID ERROR ===');
-        console.error('Auth data:', authData);
+        console.error('No user ID returned from auth signup');
         setError('Failed to create user account. Please try again.');
         return;
       }
 
-      console.log('=== AUTH USER CREATED ===');
-      console.log('User ID:', authData.user.id);
-      console.log('User metadata:', authData.user.user_metadata);
+      // Update the user record with the auth ID
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ User_Id: authData.user.id })
+        .eq('Email', formData.email);
 
-      // Check if user already exists
-      if (authData?.user?.identities?.length === 0) {
-        console.log('=== USER ALREADY EXISTS ===');
-        setError('An account with this email already exists. Please sign in instead.');
-        setIsSignUp(false);
-        return;
+      if (updateError) {
+        console.error('Error updating user with auth ID:', updateError);
       }
 
-      // If we get here, it's a successful new signup
       console.log('=== SIGNUP SUCCESSFUL ===');
       alert('Please check your email for a verification link. You must verify your email before you can sign in.');
       setIsSignUp(false);
