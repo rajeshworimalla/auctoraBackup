@@ -303,6 +303,16 @@ const ExplorePage = () => {
     setSelectedItem(item);
   };
 
+  const handleBidUpdate = (auctionId, newBid) => {
+    setAuctions(prevAuctions => 
+      prevAuctions.map(auction => 
+        auction.auction_id === auctionId 
+          ? { ...auction, current_highest_bid: newBid }
+          : auction
+      )
+    );
+  };
+
   const handleApplyFilters = () => {
     setShowFilters(false);
     if (activeTab === 'gallery') {
@@ -660,6 +670,7 @@ const ExplorePage = () => {
               isOpen={true}
               onClose={() => setSelectedItem(null)}
               art={selectedItem}
+              onBidUpdate={handleBidUpdate}
             />
           ) : (
             <GalleryModal

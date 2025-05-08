@@ -20,22 +20,32 @@ const MyListingsPage = () => {
         if (activeTab === 'gallery') {
           // Fetch gallery listings
           const { data: gallery, error: galleryError } = await supabase
-            .from('Artwork')
-            .select('*')
-            .eq('owner_id', user.id)
-            .eq('is_sold', false);
+            .from('gallery')
+            .select(`
+              *,
+              Artwork (
+                id,
+                title,
+                artist_name,
+                image_url,
+                price,
+                is_sold,
+                created_at
+              )
+            `)
+            .eq('Artwork.owner_id', user.id);
 
           if (galleryError) throw galleryError;
 
           const galleryCards = (gallery || []).map(item => ({
             id: item.id,
             type: 'Gallery',
-            title: item.title,
-            artist: item.artist_name,
-            image: item.image_url,
-            price: item.price,
-            status: item.is_sold ? 'Sold' : 'Active',
-            created_at: item.created_at,
+            title: item.Artwork?.title,
+            artist: item.Artwork?.artist_name,
+            image: item.Artwork?.image_url,
+            price: item.Artwork?.price,
+            status: item.Artwork?.is_sold ? 'Sold' : 'Active',
+            created_at: item.Artwork?.created_at,
           }));
 
           setListings(galleryCards);
@@ -43,7 +53,16 @@ const MyListingsPage = () => {
           // Fetch auction listings
           const { data: auctions, error: auctionError } = await supabase
             .from('auctions')
-            .select('*, Artwork(*)')
+            .select(`
+              *,
+              Artwork (
+                id,
+                title,
+                artist_name,
+                image_url,
+                price
+              )
+            `)
             .eq('Artwork.owner_id', user.id)
             .eq('status', 'active')
             .gt('end_time', new Date().toISOString());
@@ -59,6 +78,8 @@ const MyListingsPage = () => {
             price: item.starting_price,
             status: item.status,
             created_at: item.created_at,
+            end_time: item.end_time,
+            current_highest_bid: item.current_highest_bid
           }));
 
           setListings(auctionCards);

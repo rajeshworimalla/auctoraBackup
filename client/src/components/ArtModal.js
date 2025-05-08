@@ -2,14 +2,17 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
-const ArtModal = ({ isOpen, onClose, art }) => {
+const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
   const [bidAmount, setBidAmount] = useState('');
   const [bids, setBids] = useState([]);
   const [timeLeft, setTimeLeft] = useState({});
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [currentBid, setCurrentBid] = useState(art?.current_highest_bid || art?.starting_price || 0);
+  const [bidCount, setBidCount] = useState(0);
 
   // Check authentication status
   useEffect(() => {
@@ -65,35 +68,15 @@ const ArtModal = ({ isOpen, onClose, art }) => {
         console.error('[ArtModal] No auction ID found', art);
         return;
       }
-      const { data: auctionData, error: auctionError } = await supabase
-        .from('auctions')
-        .select('*')
-        .eq('auction_id', auctionId)
-        .single();
-      if (auctionError) {
-        console.error('[ArtModal] Error fetching auction:', auctionError);
-        return;
-      }
-      // Check if auction has ended
-      const now = new Date();
-      const end = new Date(auctionData.end_time);
-      if (now >= end && auctionData.status !== 'ended') {
-        await supabase
-          .from('auctions')
-          .update({ status: 'ended' })
-          .eq('auction_id', auctionId);
-      }
-
-      console.log('Fetching bids with query:', {
-        auctionId,
-        query: '*',
-        order: 'amount.desc',
-        limit: 3
-      });
 
       const { data: bidData, error: bidError } = await supabase
         .from('bids')
-        .select('*')
+        .select(`
+          *,
+          User:bidder_id (
+            Username
+          )
+        `)
         .eq('auction_id', auctionId)
         .order('amount', { ascending: false })
         .limit(3);
@@ -105,40 +88,65 @@ const ArtModal = ({ isOpen, onClose, art }) => {
 
       console.log('Fetched bids:', bidData);
 
-      // Fetch usernames from the User table with corrected query
-      const enrichedBids = await Promise.all(
-        bidData.map(async (bid) => {
-          console.log('Fetching user for bid:', bid); // Debugging log
-          try {
-            const { data: userData, error: userError } = await supabase
-              .from('User')
-              .select('Username') // Only select Username field
-              .eq('User_Id', bid.bidder_id)
-              .single();
+      // Transform bids to include username
+      const enrichedBids = bidData.map(bid => ({
+        ...bid,
+        user: {
+          display_name: bid.User?.Username || 'Anonymous'
+        }
+      }));
 
-            console.log('Supabase query executed for bidder_id:', bid.bidder_id); // Debugging log
-            if (userError) {
-              console.error(`Error fetching user for bidder_id ${bid.bidder_id}:`, userError);
-              return { ...bid, user: { display_name: 'Anonymous' } };
-            }
-
-            console.log('Fetched user data:', userData); // Debugging log
-            const displayName = userData?.Username || 'Anonymous';
-            console.log(`Using username for bidder_id ${bid.bidder_id}: ${displayName}`); // Debugging log
-            return { ...bid, user: { display_name: displayName } };
-          } catch (err) {
-            console.error(`Error fetching user for bidder_id ${bid.bidder_id}:`, err);
-            return { ...bid, user: { display_name: 'Anonymous' } };
-          }
-        })
-      );
-
-      console.log('Final enriched bids:', enrichedBids); // Debugging log
+      console.log('Final enriched bids:', enrichedBids);
       setBids(enrichedBids || []);
     } catch (err) {
       console.error('[ArtModal] Error in fetchBids:', err);
     }
   };
+
+  // Subscribe to real-time bid updates
+  useEffect(() => {
+    if (!isOpen || !art?.auction_id) return;
+
+    // Initial fetch of bid count
+    const fetchBidCount = async () => {
+      const { count } = await supabase
+        .from('bids')
+        .select('*', { count: 'exact', head: true })
+        .eq('auction_id', art.auction_id);
+      setBidCount(count || 0);
+    };
+    fetchBidCount();
+
+    // Subscribe to new bids
+    const subscription = supabase
+      .channel('bids_channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bids',
+          filter: `auction_id=eq.${art.auction_id}`
+        },
+        async (payload) => {
+          if (payload.eventType === 'INSERT') {
+            // Update bid count
+            setBidCount(prev => prev + 1);
+            // Update current bid if the new bid is higher
+            if (payload.new.amount > currentBid) {
+              setCurrentBid(payload.new.amount);
+            }
+            // Fetch updated bids list
+            fetchBids();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [isOpen, art?.auction_id]);
 
   // Remove duplicate fetchBids definition and use the global one in useEffect
   useEffect(() => {
@@ -180,117 +188,82 @@ const ArtModal = ({ isOpen, onClose, art }) => {
   };
 
   // Submit bid logic
-  const handleBid = async (e) => {
-    e.preventDefault();
-    if (!user) {
-      const confirmLogin = window.confirm('You need to be logged in to place a bid. Would you like to log in now?');
-      if (confirmLogin) {
-        onClose();
-        navigate('/login');
-      }
-      return;
-    }
-
-    // Check if user is trying to bid on their own auction
-    if (user.id === art.artwork?.owner_id) {
-      alert('You cannot bid on your own auction.');
-      return;
-    }
-
+  const handleBid = async () => {
     try {
-      setLoading(true);
-      const amount = parseFloat(bidAmount);
-      
-      // Add validation for negative values and zero
-      if (isNaN(amount) || amount <= 0) {
-        throw new Error('Bid amount must be greater than zero');
-      }
-      
-      if (amount <= highestBid) {
-        throw new Error('Bid must be higher than the current highest bid');
-      }
-
-      const now = new Date();
-      const end = new Date(art.end_time);
-      if (now >= end) {
-        alert('Bidding has ended for this artwork.');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Please log in to place a bid');
         return;
       }
 
-      // Get the auction ID and ensure it's a valid UUID
-      const auctionId = art.auction_id;
-      
-      if (!auctionId) {
-        throw new Error('No auction ID found');
+      if (bidAmount <= 0) {
+        toast.error('Please enter a valid bid amount');
+        return;
       }
 
-      // Place the bid
+      if (bidAmount <= currentBid) {
+        toast.error('Your bid must be higher than the current highest bid');
+        return;
+      }
+
+      if (user.id === art.owner_id) {
+        toast.error('You cannot bid on your own auction');
+        return;
+      }
+
+      setLoading(true);
+
+      // Insert the bid
       const { data: bidData, error: bidError } = await supabase
         .from('bids')
         .insert([
           {
-            auction_id: auctionId,
-            amount: amount,
-            bidder_id: user.id
+            auction_id: art.auction_id,
+            bidder_id: user.id,
+            amount: bidAmount,
+            bid_time: new Date().toISOString()
           }
         ])
-        .select();
-
-      if (bidError) {
-        console.error('Bid error:', bidError);
-        throw bidError;
-      }
-
-      // Update auction's highest bid
-      const { error: auctionError } = await supabase
-        .from('auctions')
-        .update({
-          current_highest_bid: amount,
-          highest_bidder_id: user.id,
-          status: 'active'
-        })
-        .eq('auction_id', auctionId);
-
-      if (auctionError) {
-        console.error('Auction update error:', auctionError);
-        throw auctionError;
-      }
-
-      // Fetch the user's username
-      const { data: userData, error: userError } = await supabase
-        .from('User')
-        .select('Username')
-        .eq('User_Id', user.id)
+        .select()
         .single();
 
-      if (userError) {
-        console.error('Error fetching user data:', userError);
-      }
+      if (bidError) throw bidError;
 
-      // Create new bid object with user data
+      // Update the auction's highest bid
+      const { error: updateError } = await supabase
+        .from('auctions')
+        .update({ current_highest_bid: bidAmount })
+        .eq('auction_id', art.auction_id);
+
+      if (updateError) throw updateError;
+
+      // Get the user's username
+      const { data: userData } = await supabase
+        .from('User')
+        .select('Username')
+        .eq('id', user.id)
+        .single();
+
+      // Create a new bid object with the username
       const newBid = {
-        ...bidData[0],
+        ...bidData,
         user: {
           display_name: userData?.Username || 'Anonymous'
         }
       };
 
-      // Update local state with new bid
-      setBids(prevBids => {
-        const updatedBids = [newBid, ...prevBids]
-          .sort((a, b) => b.amount - a.amount)
-          .slice(0, 3);
-        return updatedBids;
-      });
-
+      // Update local state immediately
+      setBids(prevBids => [newBid, ...prevBids]);
+      setCurrentBid(bidAmount);
+      setBidCount(prev => prev + 1);
       setBidAmount('');
-      alert('Bid placed successfully!');
+      toast.success('Bid placed successfully!');
       
-      // Refresh auction data
-      fetchBids();
+      // Update the parent component
+      onBidUpdate(art.auction_id, bidAmount);
     } catch (error) {
       console.error('Error placing bid:', error);
-      alert(error.message || 'Failed to place bid. Please try again.');
+      toast.error('Failed to place bid. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -368,15 +341,15 @@ const ArtModal = ({ isOpen, onClose, art }) => {
         {/* Current Price and Minimum Bid */}
         <div className="mb-4">
           <p className="text-sm text-gray-600">
-            Current Price: <span className="font-semibold">${highestBid}</span>
-            {highestBidder && (
+            Current Price: <span className="font-semibold">${currentBid}</span>
+            {bids.length > 0 && (
               <span className="text-sm text-gray-500 ml-2">
-                (Highest bid by {highestBidder})
+                ({bidCount} {bidCount === 1 ? 'bid' : 'bids'} placed)
               </span>
             )}
           </p>
           <p className="text-sm text-gray-600">
-            Minimum Bid: <span className="font-semibold">${highestBid + 1}</span>
+            Minimum Bid: <span className="font-semibold">${currentBid + 1}</span>
           </p>
         </div>
 
@@ -420,9 +393,9 @@ const ArtModal = ({ isOpen, onClose, art }) => {
                     setBidAmount(value);
                   }
                 }}
-                placeholder={`Minimum bid: $${highestBid + 1}`}
+                placeholder={`Minimum bid: $${currentBid + 1}`}
                 className="flex-1 p-2 border rounded"
-                min={highestBid + 1}
+                min={currentBid + 1}
                 step="0.01"
               />
               <button
