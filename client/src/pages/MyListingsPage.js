@@ -12,81 +12,91 @@ const MyListingsPage = () => {
     const fetchListings = async () => {
       try {
         setLoading(true);
-        setError(null);
-
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Please log in to view your listings');
+        if (!user) return;
 
-        if (activeTab === 'gallery') {
-          // Fetch gallery listings
-          const { data: gallery, error: galleryError } = await supabase
-            .from('gallery')
-            .select(`
-              *,
-              Artwork (
-                id,
-                title,
-                artist_name,
-                image_url,
-                price,
-                is_sold,
-                created_at
-              )
-            `)
-            .eq('Artwork.owner_id', user.id);
+        // Fetch gallery listings
+        const { data: galleryData, error: galleryError } = await supabase
+          .from('gallery')
+          .select(`
+            *,
+            Artwork:artwork_id (
+              artwork_id,
+              title,
+              description,
+              price,
+              image_url,
+              category,
+              medium,
+              artist_name,
+              owner_id
+            )
+          `)
+          .eq('Artwork.owner_id', user.id);
 
-          if (galleryError) throw galleryError;
+        if (galleryError) throw galleryError;
 
-          const galleryCards = (gallery || []).map(item => ({
-            id: item.id,
-            type: 'Gallery',
-            title: item.Artwork?.title,
-            artist: item.Artwork?.artist_name,
-            image: item.Artwork?.image_url,
-            price: item.Artwork?.price,
-            status: item.Artwork?.is_sold ? 'Sold' : 'Active',
-            created_at: item.Artwork?.created_at,
+        // Fetch auction listings
+        const { data: auctionData, error: auctionError } = await supabase
+          .from('auctions')
+          .select(`
+            *,
+            Artwork:artwork_id (
+              artwork_id,
+              title,
+              description,
+              price,
+              image_url,
+              category,
+              medium,
+              artist_name,
+              owner_id
+            )
+          `)
+          .eq('Artwork.owner_id', user.id)
+          .in('status', ['active', 'pending']);
+
+        if (auctionError) throw auctionError;
+
+        // Transform gallery data
+        const galleryListings = galleryData
+          .filter(item => item.Artwork) // Filter out null artworks
+          .map(item => ({
+            id: item.gallery_id,
+            type: 'gallery',
+            title: item.Artwork.title || 'Untitled',
+            description: item.Artwork.description || 'No description available',
+            price: item.Artwork.price || 0,
+            image_url: item.Artwork.image_url || '/Images/placeholder-art.jpg',
+            category: item.Artwork.category || 'Other',
+            medium: item.Artwork.medium || 'Mixed Media',
+            artist_name: item.Artwork.artist_name || 'Unknown Artist',
+            created_at: item.created_at
           }));
 
-          setListings(galleryCards);
-        } else {
-          // Fetch auction listings
-          const { data: auctions, error: auctionError } = await supabase
-            .from('auctions')
-            .select(`
-              *,
-              Artwork (
-                id,
-                title,
-                artist_name,
-                image_url,
-                price
-              )
-            `)
-            .eq('Artwork.owner_id', user.id)
-            .eq('status', 'active')
-            .gt('end_time', new Date().toISOString());
-
-          if (auctionError) throw auctionError;
-
-          const auctionCards = (auctions || []).map(item => ({
-            id: item.id,
-            type: 'Auction',
-            title: item.Artwork?.title,
-            artist: item.Artwork?.artist_name,
-            image: item.Artwork?.image_url,
-            price: item.starting_price,
-            status: item.status,
-            created_at: item.created_at,
+        // Transform auction data
+        const auctionListings = auctionData
+          .filter(item => item.Artwork) // Filter out null artworks
+          .map(item => ({
+            id: item.auction_id,
+            type: 'auction',
+            title: item.Artwork.title || 'Untitled',
+            description: item.Artwork.description || 'No description available',
+            starting_price: item.starting_price || 0,
+            current_highest_bid: item.current_highest_bid || item.starting_price,
             end_time: item.end_time,
-            current_highest_bid: item.current_highest_bid
+            status: item.status,
+            image_url: item.Artwork.image_url || '/Images/placeholder-art.jpg',
+            category: item.Artwork.category || 'Other',
+            medium: item.Artwork.medium || 'Mixed Media',
+            artist_name: item.Artwork.artist_name || 'Unknown Artist',
+            created_at: item.created_at
           }));
 
-          setListings(auctionCards);
-        }
+        setListings([...galleryListings, ...auctionListings]);
       } catch (error) {
         console.error('Error fetching listings:', error);
-        setError(error.message);
+        setError('Failed to fetch listings');
       } finally {
         setLoading(false);
       }
@@ -161,17 +171,17 @@ const MyListingsPage = () => {
               <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:shadow-lg hover:-translate-y-1">
                 <div className="relative h-48">
                   <img 
-                    src={item.image || '/Images/placeholder-art.jpg'} 
+                    src={item.image_url} 
                     alt={item.title} 
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-4 left-4 flex space-x-2">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      item.type === 'Gallery' 
+                      item.type === 'gallery' 
                         ? 'bg-[#D3CABE] text-[#8B7355]' 
                         : 'bg-[#8B7355] text-white'
                     }`}>
-                      {item.type}
+                      {item.type === 'gallery' ? 'Gallery' : 'Auction'}
                     </span>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                       item.status === 'Active' || item.status === 'active'
@@ -184,7 +194,7 @@ const MyListingsPage = () => {
                 </div>
                 <div className="p-4">
                   <h3 className="text-lg font-serif font-semibold text-gray-900 mb-1">{item.title}</h3>
-                  <p className="text-sm text-gray-600 mb-2">by {item.artist}</p>
+                  <p className="text-sm text-gray-600 mb-2">by {item.artist_name}</p>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center text-[#8B7355]">
                       <FiTag className="mr-1" />

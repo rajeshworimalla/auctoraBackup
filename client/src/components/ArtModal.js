@@ -196,12 +196,13 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
         return;
       }
 
-      if (bidAmount <= 0) {
+      const bidAmountNum = parseFloat(bidAmount);
+      if (isNaN(bidAmountNum) || bidAmountNum <= 0) {
         toast.error('Please enter a valid bid amount');
         return;
       }
 
-      if (bidAmount <= currentBid) {
+      if (bidAmountNum <= currentBid) {
         toast.error('Your bid must be higher than the current highest bid');
         return;
       }
@@ -220,7 +221,7 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
           {
             auction_id: art.auction_id,
             bidder_id: user.id,
-            amount: bidAmount,
+            amount: bidAmountNum,
             bid_time: new Date().toISOString()
           }
         ])
@@ -232,7 +233,7 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
       // Update the auction's highest bid
       const { error: updateError } = await supabase
         .from('auctions')
-        .update({ current_highest_bid: bidAmount })
+        .update({ current_highest_bid: bidAmountNum })
         .eq('auction_id', art.auction_id);
 
       if (updateError) throw updateError;
@@ -254,13 +255,13 @@ const ArtModal = ({ isOpen, onClose, art, onBidUpdate }) => {
 
       // Update local state immediately
       setBids(prevBids => [newBid, ...prevBids]);
-      setCurrentBid(bidAmount);
+      setCurrentBid(bidAmountNum);
       setBidCount(prev => prev + 1);
       setBidAmount('');
       toast.success('Bid placed successfully!');
       
       // Update the parent component
-      onBidUpdate(art.auction_id, bidAmount);
+      onBidUpdate(art.auction_id, bidAmountNum);
     } catch (error) {
       console.error('Error placing bid:', error);
       toast.error('Failed to place bid. Please try again.');
