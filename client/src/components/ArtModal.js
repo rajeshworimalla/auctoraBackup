@@ -156,6 +156,9 @@ const ArtModal = ({ isOpen, onClose, art }) => {
         (art && typeof art.starting_price === 'number' ? art.starting_price : 0)
       );
 
+  // Get highest bidder's username
+  const highestBidder = topBids.length > 0 ? topBids[0]?.user?.display_name : null;
+
   // Handle bid button click
   const handleBidClick = () => {
     if (!user) {
@@ -366,6 +369,11 @@ const ArtModal = ({ isOpen, onClose, art }) => {
         <div className="mb-4">
           <p className="text-sm text-gray-600">
             Current Price: <span className="font-semibold">${highestBid}</span>
+            {highestBidder && (
+              <span className="text-sm text-gray-500 ml-2">
+                (Highest bid by {highestBidder})
+              </span>
+            )}
           </p>
           <p className="text-sm text-gray-600">
             Minimum Bid: <span className="font-semibold">${highestBid + 1}</span>

@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { FiPackage, FiClock } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 
 const PurchasesPage = () => {
   const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [successMessage, setSuccessMessage] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchPurchases = async () => {
@@ -72,11 +75,24 @@ const PurchasesPage = () => {
       setError(null);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Please log in to view your purchases');
+      
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*, artwork:artwork_id(title, image_url, price))')
+        .select(`
+          *,
+          order_items (
+            *,
+            artwork:artwork_id (
+              title,
+              image_url,
+              artist_name,
+              price
+            )
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
       if (error) throw error;
       setOrders(data || []);
     } catch (error) {
@@ -94,11 +110,24 @@ const PurchasesPage = () => {
   const pastPurchases = orders.filter(order => order.status === 'delivered');
 
   const handleMarkAsDelivered = async (orderId) => {
-    await supabase
-      .from('orders')
-      .update({ status: 'delivered' })
-      .eq('id', orderId);
-    fetchOrders();
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          status: 'delivered',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      setSuccessMessage('Order marked as delivered successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      fetchOrders(); // Refresh the orders list
+    } catch (error) {
+      console.error('Error marking order as delivered:', error);
+      setError('Failed to mark order as delivered');
+    }
   };
 
   if (loading) {
@@ -125,38 +154,123 @@ const PurchasesPage = () => {
   return (
     <div className="min-h-screen bg-[#F5F5F5] py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {successMessage && (
+          <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
+            {successMessage}
+          </div>
+        )}
         <h1 className="text-3xl font-serif font-bold text-[#8B7355] mb-8">My Purchases</h1>
         
         <section className="mb-10">
           <h2 className="text-xl font-semibold mb-4">Active Orders</h2>
-          {activeOrders.map(order => (
-            <div key={order.id} className="bg-white rounded-lg shadow-md p-6 mb-4">
-              <h3 className="text-lg font-bold mb-2">Order #{order.id.slice(0, 8)}</h3>
-              <div className="mb-2 text-sm text-gray-500">Status: {order.status}</div>
-              <div>
-                {order.order_items.map(item => (
-                  <div key={item.id} className="flex items-center mb-2">
-                    <img src={item.artwork?.image_url || '/Images/placeholder-art.jpg'} alt={item.artwork?.title} className="w-12 h-12 object-cover rounded mr-3" />
-                    <div>
-                      <div className="font-medium">{item.artwork?.title}</div>
-                      <div className="text-xs text-gray-500">x{item.quantity} • ${item.price_at_time}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="font-bold mt-2">Total: ${order.total_amount}</div>
+          {activeOrders.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-md p-8 text-center">
+              <p className="text-gray-500 mb-4">You have no active orders at the moment.</p>
               <button
-                onClick={() => handleMarkAsDelivered(order.id)}
-                className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+                onClick={() => navigate('/explore')}
+                className="text-[#8B7355] hover:text-[#6B563D]"
               >
-                Mark as Delivered
+                Start Shopping
               </button>
             </div>
-          ))}
+          ) : (
+            activeOrders.map(order => (
+              <div key={order.id} className="bg-white rounded-lg shadow-md p-6 mb-4">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold">Order #{order.id.slice(0, 8)}</h3>
+                    <p className="text-sm text-gray-500">Placed on {new Date(order.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  </span>
+                </div>
+                <div className="space-y-4">
+                  {order.order_items.map(item => (
+                    <div key={item.id} className="flex items-center space-x-4">
+                      <img 
+                        src={item.artwork?.image_url || '/Images/placeholder-art.jpg'} 
+                        alt={item.artwork?.title} 
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                      <div className="flex-grow">
+                        <h4 className="font-medium">{item.artwork?.title}</h4>
+                        <p className="text-sm text-gray-500">by {item.artwork?.artist_name}</p>
+                        <p className="text-sm text-gray-500">Qty: {item.quantity} × ${item.price_at_time}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">${(item.quantity * item.price_at_time).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold">Total</span>
+                    <span className="font-bold">${order.total_amount.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </section>
+
         <section>
           <h2 className="text-xl font-semibold mb-4">Past Purchases</h2>
-          {/* Render pastPurchases here */}
+          {pastPurchases.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-md p-8 text-center">
+              <p className="text-gray-500 mb-4">You haven't made any purchases yet.</p>
+              <button
+                onClick={() => navigate('/explore')}
+                className="text-[#8B7355] hover:text-[#6B563D]"
+              >
+                Start Shopping
+              </button>
+            </div>
+          ) : (
+            pastPurchases.map(order => (
+              <div key={order.id} className="bg-white rounded-lg shadow-md p-6 mb-4">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold">Order #{order.id.slice(0, 8)}</h3>
+                    <p className="text-sm text-gray-500">Delivered on {new Date(order.updated_at).toLocaleDateString()}</p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    Delivered
+                  </span>
+                </div>
+                <div className="space-y-4">
+                  {order.order_items.map(item => (
+                    <div key={item.id} className="flex items-center space-x-4">
+                      <img 
+                        src={item.artwork?.image_url || '/Images/placeholder-art.jpg'} 
+                        alt={item.artwork?.title} 
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                      <div className="flex-grow">
+                        <h4 className="font-medium">{item.artwork?.title}</h4>
+                        <p className="text-sm text-gray-500">by {item.artwork?.artist_name}</p>
+                        <p className="text-sm text-gray-500">Qty: {item.quantity} × ${item.price_at_time}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">${(item.quantity * item.price_at_time).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold">Total</span>
+                    <span className="font-bold">${order.total_amount.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </section>
         
         {purchases.length === 0 ? (

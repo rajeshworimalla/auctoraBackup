@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
@@ -34,6 +34,35 @@ const Checkout = () => {
     billingPostalCode: '',
     billingCountry: 'USA'
   });
+
+  useEffect(() => {
+    const fetchCartItems = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('cart_items')
+          .select(`
+            *,
+            artwork:artwork_id (
+              title,
+              image_url,
+              artist_name,
+              price
+            )
+          `)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        setCartItems(data || []);
+      } catch (error) {
+        console.error('Error fetching cart items:', error);
+      }
+    };
+
+    fetchCartItems();
+  }, []);
 
   const handleShippingSubmit = async (e) => {
     e.preventDefault();
@@ -114,7 +143,7 @@ const Checkout = () => {
         .from('orders')
         .insert({
           user_id: user.id,
-          total_amount: cartItems.reduce((total, item) => total + (item.price * item.quantity), 0),
+          total_amount: cartItems.reduce((total, item) => total + (item.artwork.price * item.quantity), 0),
           status: 'pending'
         })
         .select()
@@ -128,7 +157,7 @@ const Checkout = () => {
           order_id: orderData.id,
           artwork_id: item.artwork_id,
           quantity: item.quantity,
-          price_at_time: item.price
+          price_at_time: item.artwork.price
         });
       }
 
@@ -414,7 +443,7 @@ const Checkout = () => {
             {/* Order Summary */}
             <div className="mb-8">
               <h3 className="text-xl font-semibold mb-4">Order Summary</h3>
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <div className="bg-gray-50 rounded-lg p-4">
                 {/* Items List */}
                 <div className="space-y-4">
                   {cartItems.map((item) => (
@@ -422,8 +451,8 @@ const Checkout = () => {
                       {/* Thumbnail */}
                       <div className="w-20 h-20 flex-shrink-0">
                         <img
-                          src={item.image_url || '/Images/placeholder-art.jpg'}
-                          alt={item.title}
+                          src={item.artwork.image_url || '/Images/placeholder-art.jpg'}
+                          alt={item.artwork.title}
                           className="w-full h-full object-cover rounded-md"
                         />
                       </div>
@@ -432,16 +461,16 @@ const Checkout = () => {
                       <div className="flex-grow">
                         <div className="flex justify-between">
                           <div>
-                            <h4 className="text-base font-medium text-gray-900">{item.title}</h4>
-                            <p className="text-sm text-gray-500">by {item.artist_name}</p>
+                            <h4 className="text-base font-medium text-gray-900">{item.artwork.title}</h4>
+                            <p className="text-sm text-gray-500">by {item.artwork.artist_name}</p>
                             <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-base font-medium text-gray-900">
-                              ${(item.price * item.quantity).toFixed(2)}
+                              ${(item.artwork.price * item.quantity).toFixed(2)}
                             </p>
                             <p className="text-sm text-gray-500">
-                              ${item.price.toFixed(2)} each
+                              ${item.artwork.price.toFixed(2)} each
                             </p>
                           </div>
                         </div>
@@ -451,10 +480,10 @@ const Checkout = () => {
                 </div>
 
                 {/* Order Totals */}
-                <div className="mt-6 space-y-3 border-t border-gray-200 pt-4">
+                <div className="mt-4 space-y-2">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
-                    <span>${cartItems.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2)}</span>
+                    <span>${cartItems.reduce((total, item) => total + (item.artwork.price * item.quantity), 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
@@ -462,11 +491,11 @@ const Checkout = () => {
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Tax</span>
-                    <span>${(cartItems.reduce((total, item) => total + (item.price * item.quantity), 0) * 0.1).toFixed(2)}</span>
+                    <span>${(cartItems.reduce((total, item) => total + (item.artwork.price * item.quantity), 0) * 0.1).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold text-gray-900 pt-3 border-t border-gray-200">
                     <span>Total</span>
-                    <span>${(cartItems.reduce((total, item) => total + (item.price * item.quantity), 0) * 1.1).toFixed(2)}</span>
+                    <span>${(cartItems.reduce((total, item) => total + (item.artwork.price * item.quantity), 0) * 1.1).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
