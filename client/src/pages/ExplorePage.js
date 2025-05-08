@@ -52,13 +52,14 @@ const ExplorePage = () => {
 
   // Fetch data when component mounts or tab changes
   useEffect(() => {
+    console.log('[DEBUG] activeTab changed to:', activeTab);
     if (activeTab === 'gallery') {
       fetchArtworks();
     } else {
       fetchAuctions();
     }
   }, [activeTab]);
-
+  
   // Add effect to fetch data when showMyListings changes
   useEffect(() => {
     if (activeTab === 'gallery') {
@@ -81,17 +82,27 @@ const ExplorePage = () => {
     try {
       setLoading(true);
       setError(null);
-
-      console.log('Starting to fetch gallery items...');
-
-      // Query the gallery table and join with Artwork
+  
+      console.log('[DEBUG] Starting to fetch gallery items...');
+  
+      // Correct join: gallery.artwork_id → Artwork.artwork_id
       let query = supabase
         .from('gallery')
         .select(`
           *,
-          Artwork (*)
+          Artwork:artwork_id (
+            artwork_id,
+            title,
+            price,
+            medium,
+            category,
+            image_url,
+            owner_id,
+            artist_name,
+            description
+          )
         `);
-
+  
       // Apply filters
       if (filters.search) {
         query = query.ilike('Artwork.title', `%${filters.search}%`);
@@ -108,11 +119,11 @@ const ExplorePage = () => {
       if (filters.maxPrice) {
         query = query.lte('Artwork.price', filters.maxPrice);
       }
-
+  
       if (showMyListings && user) {
         query = query.eq('Artwork.owner_id', user.id);
       }
-
+  
       // Apply sorting
       switch (filters.sortBy) {
         case 'price_low':
@@ -125,44 +136,46 @@ const ExplorePage = () => {
         default:
           query = query.order('created_at', { ascending: false });
       }
-
+  
       const { data: galleryData, error: galleryError } = await query;
-
-      console.log('Raw gallery data:', galleryData);
-
+  
       if (galleryError) {
-        console.error('Error fetching gallery:', galleryError);
+        console.error('[DEBUG] Gallery fetch error:', galleryError.message, galleryError.details);
         throw galleryError;
       }
-
+  
+      console.log('[DEBUG] Raw gallery data:', galleryData);
+  
       if (!galleryData || galleryData.length === 0) {
-        console.log('No items found in gallery table');
+        console.log('[DEBUG] No items found in gallery table');
         setArtworks([]);
         return;
       }
-
-      // Map the data to include gallery-specific information
+  
       const mappedArtworks = galleryData.map(item => ({
         ...item.Artwork,
         gallery_id: item.id,
         featured: item.featured,
         display_order: item.display_order
       }));
-
-      console.log('Mapped artworks:', mappedArtworks);
+  
+      console.log('[DEBUG] Mapped artworks:', mappedArtworks);
       setArtworks(mappedArtworks);
     } catch (error) {
-      console.error('Error in fetchArtworks:', error);
+      console.error('[DEBUG] Error in fetchArtworks():', error.message || error);
       setError('Failed to fetch artworks. Please try again.');
     } finally {
       setLoading(false);
     }
   };
-
-  const fetchAuctions = async () => {
+   const fetchAuctions = async () => {
+    console.log('[DEBUG] fetchAuctions() called');
+  
     try {
       setLoading(true);
       setError(null);
+  
+  
 
       const { data: { user } } = await supabase.auth.getUser();
       let query = supabase
@@ -234,6 +247,7 @@ const ExplorePage = () => {
           count: countResult.data?.count || 0,
           topBids: topBidsResult.data || []
         };
+        
       });
 
       const bidResults = await Promise.all(bidPromises);
